@@ -43,3 +43,21 @@ create policy "Public write actual_results" on actual_results
 
 create policy "Public update actual_results" on actual_results
   for update using (true) with check (true);
+
+-- Current Premier League players, used to power the Golden Boot / Golden
+-- Glove / Most Assists suggestion lists. Kept fresh by the scheduled
+-- "Sync Premier League Players" GitHub Actions workflow (scripts/sync-players.mjs),
+-- which writes here using the Supabase service_role key — never the anon key
+-- — so this table is intentionally read-only from the browser.
+create table if not exists players (
+  id text primary key,
+  name text not null,
+  team text not null,
+  position text not null check (position in ('forward', 'keeper')),
+  updated_at timestamptz not null default now()
+);
+
+alter table players enable row level security;
+
+create policy "Public read players" on players
+  for select using (true);

@@ -903,7 +903,33 @@ async function renderLeaderboard(){
 
 document.getElementById('refreshBoardBtn').addEventListener('click', renderLeaderboard);
 
+// ---------- Award suggestion lists (live squads, synced via GitHub Actions) ----------
+function escapeAttr(str){
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function loadPlayerSuggestions(){
+  if(!backendConfigured) return; // keep the built-in datalist as a fallback
+  try{
+    const { data, error } = await db.from('players').select('name,position');
+    if(error || !data || data.length === 0) return; // no synced players yet — keep fallback
+    const forwards = data.filter(p=>p.position==='forward').map(p=>p.name).sort();
+    const keepers = data.filter(p=>p.position==='keeper').map(p=>p.name).sort();
+    if(forwards.length){
+      document.getElementById('forwardsList').innerHTML =
+        forwards.map(n=>`<option value="${escapeAttr(n)}">`).join('');
+    }
+    if(keepers.length){
+      document.getElementById('keepersList').innerHTML =
+        keepers.map(n=>`<option value="${escapeAttr(n)}">`).join('');
+    }
+  }catch(err){
+    console.error('Could not load live player suggestions, using built-in list.', err);
+  }
+}
+
 initForm();
+loadPlayerSuggestions();
 </script>
 </body>
 </html>

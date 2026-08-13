@@ -46,6 +46,48 @@ with the values from step 3. Commit and push.
 That's it — anyone with the link can now enter predictions, and everyone sees the
 same live leaderboard and results.
 
+## Keeping the award suggestions current (optional)
+
+The Golden Boot / Golden Glove / Most Assists fields show autocomplete suggestions.
+Out of the box these come from a static list baked into `index.html`. To have them
+reflect the current Premier League squads instead, set up the scheduled sync:
+
+### 1. Get a free football-data.org API key
+
+1. Sign up at [football-data.org/client/register](https://www.football-data.org/client/register).
+2. Copy the API key from your account page (free tier: 10 requests/minute, includes
+   Premier League squads — plenty for a weekly sync).
+
+### 2. Get your Supabase service_role key
+
+1. In the Supabase dashboard, go to **Project Settings → API**.
+2. Copy the **`service_role`** key. Unlike the anon key, this one bypasses Row Level
+   Security and must **never** appear in `index.html` or anywhere client-side — it
+   only goes into a GitHub Actions secret (step 3), which the browser never sees.
+
+### 3. Add GitHub Actions secrets
+
+In this repo on GitHub, go to **Settings → Secrets and variables → Actions**, and
+add three repository secrets:
+
+| Secret name | Value |
+|---|---|
+| `FOOTBALL_DATA_API_KEY` | the key from step 1 |
+| `SUPABASE_URL` | your Supabase project URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | the key from step 2 |
+
+### 4. Run the sync
+
+The **Sync Premier League Players** workflow (`.github/workflows/sync-players.yml`)
+runs automatically every Monday, and can also be triggered manually: go to the
+**Actions** tab → **Sync Premier League Players** → **Run workflow**. It fetches
+current squads from football-data.org and writes them into the `players` table
+created by `supabase-setup.sql` (`scripts/sync-players.mjs` does the work).
+
+The page reads from that table on load and swaps in the live names automatically;
+until the workflow has run at least once, it just keeps showing the static
+fallback list, so the site works fine either way.
+
 ## Changing the admin passcode
 
 The "Update Results" tab is gated by a passcode set in `index.html`:
