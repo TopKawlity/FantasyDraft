@@ -1,4 +1,4 @@
--- The Boot Room — Supabase schema
+-- The Prediction Room 26-27 — Supabase schema
 -- Run this once in your Supabase project's SQL Editor (Dashboard → SQL Editor → New query → Run).
 
 -- One row per player, keyed by their lowercased name.

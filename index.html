@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>The Boot Room — 2026/27 Predictions</title>
+<title>The Prediction Room 26-27</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Inter:wght@400;500;600;700&family=Oswald:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -45,16 +45,6 @@
     background:repeating-linear-gradient(90deg, var(--claret) 0 24px, var(--gold) 24px 48px);
     opacity:0;
   }
-  .eyebrow{
-    font-family:'Oswald',sans-serif;
-    font-weight:700;
-    color:var(--gold);
-    -webkit-text-stroke:.5px var(--ink);
-    font-size:12px;
-    letter-spacing:.18em;
-    text-transform:uppercase;
-    margin:0 0 6px;
-  }
   h1.title{
     font-family:'Luckiest Guy',cursive;
     font-weight:400;
@@ -78,6 +68,126 @@
     font-size:15px;
     margin:10px 0 0;
     max-width:520px;
+  }
+
+  /* Header juggle animation */
+  .juggle-scene{
+    display:block;
+    width:220px;
+    max-width:60%;
+    height:auto;
+    margin:16px 0 0;
+    overflow:visible;
+  }
+  .juggle-ball{ animation:juggleBall 3.6s ease-in-out infinite; }
+  .juggle-legA{
+    transform-origin:65px 92px;
+    animation:juggleKickA 3.6s ease-in-out infinite;
+  }
+  .juggle-playerB{
+    transform-origin:235px 129px;
+    animation:juggleHopB 3.6s ease-in-out infinite;
+  }
+  @keyframes juggleBall{
+    0%   { transform:translate(76px,120px); }
+    25%  { transform:translate(150px,55px); }
+    45%  { transform:translate(220px,48px); }
+    50%  { transform:translate(224px,44px); }
+    55%  { transform:translate(220px,50px); }
+    75%  { transform:translate(150px,80px); }
+    95%  { transform:translate(80px,115px); }
+    100% { transform:translate(76px,120px); }
+  }
+  @keyframes juggleKickA{
+    0%   { transform:rotate(-40deg); }
+    12%  { transform:rotate(0deg); }
+    85%  { transform:rotate(0deg); }
+    100% { transform:rotate(-40deg); }
+  }
+  @keyframes juggleHopB{
+    0%, 38%   { transform:translateY(0) rotate(0deg); }
+    48%       { transform:translateY(-9px) rotate(-6deg); }
+    58%, 100% { transform:translateY(0) rotate(0deg); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .juggle-ball, .juggle-legA, .juggle-playerB{ animation:none; }
+  }
+
+  /* Save celebration popup */
+  .save-celebration{
+    position:fixed;
+    inset:0;
+    background:rgba(24,19,0,.72);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:1000;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s;
+  }
+  .save-celebration.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .save-card{
+    background:var(--white);
+    border:3px solid var(--ink);
+    border-radius:14px;
+    padding:22px 24px 26px;
+    max-width:300px;
+    width:100%;
+    text-align:center;
+    box-shadow:8px 8px 0 var(--ink);
+  }
+  .save-scene{ width:100%; height:auto; display:block; }
+  .save-keeper{ transform-origin:170px 60px; }
+  .save-celebration.show .save-keeper{ animation:saveKeeperDive 1.3s cubic-bezier(.4,0,.2,1) forwards; }
+  .save-celebration.show .save-ball{ animation:saveBallFly 1.3s cubic-bezier(.3,.6,.3,1) forwards; }
+  .save-message{
+    opacity:0;
+    transform:translateY(6px) scale(.92);
+  }
+  .save-celebration.show .save-message{
+    animation:saveMessageIn .5s ease-out forwards;
+    animation-delay:1s;
+  }
+  .save-title{
+    font-family:'Luckiest Guy',cursive;
+    font-size:26px;
+    color:var(--gold);
+    text-shadow:-2px -2px 0 var(--ink),2px -2px 0 var(--ink),-2px 2px 0 var(--ink),2px 2px 0 var(--ink);
+    margin:6px 0 2px;
+  }
+  .save-sub{
+    font-family:'Oswald',sans-serif;
+    font-size:13px;
+    color:var(--ink-soft);
+    margin:0;
+  }
+  .save-dismiss{
+    margin-top:14px;
+  }
+  @keyframes saveBallFly{
+    0%   { transform:translate(18px,42px); }
+    55%  { transform:translate(138px,38px); }
+    75%  { transform:translate(165px,36px); }
+    100% { transform:translate(165px,36px); }
+  }
+  @keyframes saveKeeperDive{
+    0%   { transform:translate(0,0) rotate(0deg); }
+    45%  { transform:translate(0,0) rotate(0deg); }
+    80%  { transform:translate(-20px,10px) rotate(-62deg); }
+    100% { transform:translate(-20px,10px) rotate(-62deg); }
+  }
+  @keyframes saveMessageIn{
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .save-celebration.show .save-keeper,
+    .save-celebration.show .save-ball{ animation:none; }
+    .save-celebration.show .save-message{ animation:none; opacity:1; transform:none; }
   }
 
   /* Tabs */
@@ -416,9 +526,34 @@
 <div class="app">
 
   <div class="stadium-header">
-    <p class="eyebrow">Friends &amp; Family Prediction Pool</p>
-    <h1 class="title">The Boot Room</h1>
+    <h1 class="title">The Prediction Room 26-27</h1>
     <p class="subtitle">Premier League 2026/27 — call your top six, your relegation three, and your individual award winners before a ball is kicked. The table below updates as the real season unfolds.</p>
+    <svg class="juggle-scene" viewBox="0 0 300 140" aria-hidden="true">
+      <g fill="none" stroke="var(--ink)" stroke-width="9" stroke-linecap="round">
+        <line x1="65" y1="65" x2="54" y2="82"/>
+        <line x1="65" y1="65" x2="76" y2="82"/>
+        <line x1="65" y1="92" x2="55" y2="129"/>
+      </g>
+      <rect x="52" y="58" width="26" height="34" rx="10" fill="var(--gold)" stroke="var(--ink)" stroke-width="4"/>
+      <circle cx="65" cy="47" r="12" fill="var(--gold)" stroke="var(--ink)" stroke-width="4"/>
+      <line class="juggle-legA" x1="65" y1="92" x2="79" y2="122" stroke="var(--ink)" stroke-width="9" stroke-linecap="round"/>
+
+      <g class="juggle-playerB">
+        <g fill="none" stroke="var(--ink)" stroke-width="9" stroke-linecap="round">
+          <line x1="235" y1="65" x2="246" y2="82"/>
+          <line x1="235" y1="65" x2="224" y2="82"/>
+          <line x1="235" y1="92" x2="245" y2="129"/>
+          <line x1="235" y1="92" x2="225" y2="129"/>
+        </g>
+        <rect x="222" y="58" width="26" height="34" rx="10" fill="var(--white)" stroke="var(--ink)" stroke-width="4"/>
+        <circle cx="235" cy="47" r="12" fill="var(--white)" stroke="var(--ink)" stroke-width="4"/>
+      </g>
+
+      <g class="juggle-ball">
+        <circle r="9" fill="var(--white)" stroke="var(--ink)" stroke-width="3"/>
+        <path d="M0,-9 L3,-3 L-3,-3 Z M-9,0 L-3,-3 L-3,3 Z M9,0 L3,-3 L3,3 Z M0,9 L3,3 L-3,3 Z" fill="var(--ink)" opacity=".45"/>
+      </g>
+    </svg>
   </div>
 
   <div class="tabs">
@@ -616,6 +751,39 @@
   </div>
 
   <p class="footer-note">Predictions and results are visible to everyone in this pool. Scoring: Top 6 &amp; Bottom 3 exact spot = 10 pts, right group wrong spot = 4 pts · Awards = 20 pts · Team records = 15 pts.</p>
+</div>
+
+<div class="save-celebration" id="saveCelebration">
+  <div class="save-card">
+    <svg class="save-scene" viewBox="0 0 200 100" aria-hidden="true">
+      <g stroke="var(--ink)" stroke-width="3" fill="none" opacity=".55">
+        <line x1="145" y1="18" x2="195" y2="18"/>
+        <line x1="145" y1="18" x2="145" y2="86"/>
+        <line x1="195" y1="18" x2="195" y2="86"/>
+      </g>
+      <g class="save-keeper">
+        <g fill="none" stroke="var(--ink)" stroke-width="8" stroke-linecap="round">
+          <line x1="170" y1="28" x2="140" y2="40"/>
+          <line x1="170" y1="28" x2="200" y2="40"/>
+          <line x1="170" y1="55" x2="158" y2="86"/>
+          <line x1="170" y1="55" x2="182" y2="86"/>
+        </g>
+        <circle cx="140" cy="40" r="6" fill="var(--white)" stroke="var(--ink)" stroke-width="3"/>
+        <circle cx="200" cy="40" r="6" fill="var(--white)" stroke="var(--ink)" stroke-width="3"/>
+        <rect x="157" y="20" width="26" height="35" rx="9" fill="var(--pitch-dark)" stroke="var(--ink)" stroke-width="4"/>
+        <circle cx="170" cy="12" r="11" fill="var(--pitch-dark)" stroke="var(--ink)" stroke-width="4"/>
+      </g>
+      <g class="save-ball">
+        <circle r="9" fill="var(--white)" stroke="var(--ink)" stroke-width="3"/>
+        <path d="M0,-9 L3,-3 L-3,-3 Z M-9,0 L-3,-3 L-3,3 Z M9,0 L3,-3 L3,3 Z M0,9 L3,3 L-3,3 Z" fill="var(--ink)" opacity=".45"/>
+      </g>
+    </svg>
+    <div class="save-message">
+      <p class="save-title">Saved!</p>
+      <p class="save-sub">Your picks are live on the leaderboard.</p>
+    </div>
+    <button class="btn secondary save-dismiss" id="saveCelebrationClose" type="button">Nice one</button>
+  </div>
 </div>
 
 <datalist id="forwardsList">
@@ -920,6 +1088,24 @@ function showStatus(elId, msg, isError, duration=4000){
   }
 }
 
+let saveCelebrationTimer = null;
+function showSaveCelebration(){
+  const el = document.getElementById('saveCelebration');
+  el.classList.remove('show');
+  void el.offsetWidth; // force reflow so the animation restarts on repeat saves
+  el.classList.add('show');
+  clearTimeout(saveCelebrationTimer);
+  saveCelebrationTimer = setTimeout(hideSaveCelebration, 3500);
+}
+function hideSaveCelebration(){
+  document.getElementById('saveCelebration').classList.remove('show');
+  clearTimeout(saveCelebrationTimer);
+}
+document.getElementById('saveCelebrationClose').addEventListener('click', hideSaveCelebration);
+document.getElementById('saveCelebration').addEventListener('click', (e)=>{
+  if(e.target.id === 'saveCelebration') hideSaveCelebration();
+});
+
 function requireBackend(statusElId){
   if(!backendConfigured){
     showStatus(statusElId, 'Backend not configured yet — see the banner at the top of the page.', true);
@@ -1032,6 +1218,7 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
     const ok = await savePrediction(data.name, data);
     if(ok){
       showStatus('saveStatus', 'Saved! Your picks are live on the leaderboard.', false);
+      showSaveCelebration();
     } else {
       showStatus('saveStatus', 'Something went wrong saving — try again.', true);
     }

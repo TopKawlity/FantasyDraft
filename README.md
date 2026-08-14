@@ -1,4 +1,4 @@
-# The Boot Room — 2026/27 Predictions
+# The Prediction Room 26-27
 
 A friends & family prediction pool for the Premier League 2026/27 season, hosted as a
 static site on GitHub Pages with [Supabase](https://supabase.com) as the backend so
