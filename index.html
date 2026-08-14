@@ -98,7 +98,11 @@
 
   /* Cards */
   .chit{
-    background:var(--white);
+    background-color:var(--white);
+    background-image:
+      radial-gradient(circle 7px at 0 11px, var(--paper) 7px, transparent 7.5px),
+      radial-gradient(circle 7px at 100% 11px, var(--paper) 7px, transparent 7.5px);
+    background-repeat:no-repeat;
     border:1px solid var(--paper-line);
     border-radius:2px;
     padding:22px 22px 24px;
@@ -107,7 +111,7 @@
   }
   .chit::before{
     content:"";
-    position:absolute;top:0;left:22px;right:22px;height:0;
+    position:absolute;top:11px;left:22px;right:22px;height:0;
     border-top:1px dashed var(--paper-line);
   }
   .chit-title{
@@ -145,7 +149,7 @@
     outline:none;border-color:var(--pitch-mid);background:var(--white);
   }
   .field-group{margin-bottom:22px;}
-  .rank-row{display:grid;grid-template-columns:34px 1fr;gap:10px;align-items:center;margin-bottom:9px;}
+  .rank-row{display:grid;grid-template-columns:34px 1fr 30px;gap:10px;align-items:center;margin-bottom:9px;}
   .rank-badge{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;font-size:13px;
@@ -157,6 +161,37 @@
   }
   .rank-badge.rel{background:var(--claret);}
   .rank-row select{margin-bottom:0;}
+  .team-badge-slot{display:flex;align-items:center;justify-content:center;min-height:22px;}
+  .team-badge{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:22px;height:22px;
+    border-radius:50%;
+    font-family:'JetBrains Mono',monospace;
+    font-size:9px;font-weight:700;
+    color:#fff;
+    flex-shrink:0;
+  }
+  .select-with-badge{display:flex;align-items:center;gap:8px;margin-bottom:14px;}
+  .select-with-badge select{margin-bottom:0;flex:1;}
+  .avatar-picker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .avatar-option{
+    width:40px;height:40px;
+    border-radius:50%;
+    border:2px solid var(--paper-line);
+    background:var(--paper);
+    font-size:19px;
+    line-height:1;
+    display:flex;align-items:center;justify-content:center;
+    cursor:pointer;
+    padding:0;
+    transition:transform .1s, border-color .15s, box-shadow .15s;
+  }
+  .avatar-option:hover{transform:translateY(-2px);}
+  .avatar-option.selected{
+    border-color:var(--gold);
+    background:var(--white);
+    box-shadow:0 0 0 3px rgba(217,164,65,.25);
+  }
 
   .section-heading{
     font-family:'JetBrains Mono',monospace;
@@ -215,7 +250,11 @@
 
   /* Leaderboard */
   .scoreboard{
-    background:var(--pitch-dark);
+    background-color:var(--pitch-dark);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Ccircle cx='150' cy='150' r='70' fill='none' stroke='rgba(255,255,255,0.06)' stroke-width='2'/%3E%3Cline x1='0' y1='150' x2='300' y2='150' stroke='rgba(255,255,255,0.06)' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:center;
+    background-size:contain;
     border-radius:3px;
     overflow:hidden;
     margin-bottom:22px;
@@ -245,13 +284,37 @@
     font-family:'Anton',sans-serif;
     font-size:22px;
     color:var(--gold);
+    text-align:center;
   }
-  .rank-num.gold{color:#F2CB6E;}
+  .rank-num.medal{
+    width:34px;height:34px;
+    border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:14px;
+    color:var(--pitch-dark);
+  }
+  .rank-num.medal.gold{background:linear-gradient(145deg,#F7DFA0,#D9A441);box-shadow:0 0 10px rgba(217,164,65,.55);}
+  .rank-num.medal.silver{background:linear-gradient(145deg,#F2F3F5,#B9C0C6);box-shadow:0 0 8px rgba(185,192,198,.5);}
+  .rank-num.medal.bronze{background:linear-gradient(145deg,#E3B489,#B5713B);box-shadow:0 0 8px rgba(181,113,59,.5);}
   .player-name{
     font-family:'Inter',sans-serif;
     font-weight:600;
     color:var(--white);
     font-size:15px;
+    display:flex;
+    align-items:center;
+    gap:9px;
+  }
+  .avatar-badge{
+    width:28px;height:28px;
+    border-radius:50%;
+    background:rgba(255,255,255,.08);
+    border:1px solid rgba(255,255,255,.15);
+    display:flex;align-items:center;justify-content:center;
+    font-size:15px;
+    flex-shrink:0;
   }
   .points{
     font-family:'JetBrains Mono',monospace;
@@ -299,6 +362,8 @@
   .actual-card .k{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-soft);}
   .actual-card .v{font-weight:700;font-size:14px;margin-top:3px;}
   .actual-card .v.empty{color:#B7AF97;font-weight:400;font-style:italic;}
+  .badge-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px;}
+  .badge-list-item{display:inline-flex;align-items:center;gap:5px;font-size:13px;font-weight:600;color:var(--ink);}
 
   .admin-gate{max-width:340px;margin:20px auto;text-align:center;}
   .helper{font-size:12px;color:var(--ink-soft);margin-top:-8px;margin-bottom:16px;}
@@ -338,6 +403,8 @@
       <p class="chit-title">Your Name</p>
       <p class="chit-desc">Type the name you want on the scoreboard. If it matches a name already saved, we'll load your existing picks so you can edit them.</p>
       <input type="text" id="playerName" placeholder="e.g. Sushant">
+      <label class="field-label" style="margin-top:2px;">Pick your mascot</label>
+      <div class="avatar-picker" id="avatarPicker"></div>
       <button class="btn secondary" id="loadMineBtn" type="button">Load my saved picks</button>
       <div class="status-msg" id="loadStatus"></div>
     </div>
@@ -380,11 +447,17 @@
       <div class="two-col">
         <div>
           <label class="field-label">Best Defence (most clean sheets)</label>
-          <select id="bestDefence"></select>
+          <div class="select-with-badge">
+            <select id="bestDefence"></select>
+            <span class="team-badge-slot" id="bestDefence_badge"></span>
+          </div>
         </div>
         <div>
           <label class="field-label">Best Attack (most goals scored)</label>
-          <select id="bestAttack"></select>
+          <div class="select-with-badge">
+            <select id="bestAttack"></select>
+            <span class="team-badge-slot" id="bestAttack_badge"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -453,11 +526,17 @@
         <div class="two-col">
           <div>
             <label class="field-label">Best Defence</label>
-            <select id="actualBestDefence"></select>
+            <div class="select-with-badge">
+              <select id="actualBestDefence"></select>
+              <span class="team-badge-slot" id="actualBestDefence_badge"></span>
+            </div>
           </div>
           <div>
             <label class="field-label">Best Attack</label>
-            <select id="actualBestAttack"></select>
+            <div class="select-with-badge">
+              <select id="actualBestAttack"></select>
+              <span class="team-badge-slot" id="actualBestAttack_badge"></span>
+            </div>
           </div>
         </div>
       </div>
@@ -568,14 +647,72 @@ function teamOptionsHTML(selectedVal){
   return html;
 }
 
+// ---------- Team crest badges ----------
+function teamInitials(name){
+  return name.split(/\s+/).filter(w=>w && w!=='&' && w.toLowerCase()!=='and').map(w=>w[0]).join('').toUpperCase().slice(0,3);
+}
+
+function teamHue(name){
+  let hash = 0;
+  for(let i=0;i<name.length;i++){ hash = (hash*31 + name.charCodeAt(i)) >>> 0; }
+  return hash % 360;
+}
+
+function teamBadgeHTML(name){
+  if(!name) return '';
+  return `<span class="team-badge" style="background:hsl(${teamHue(name)},55%,38%)" title="${name}">${teamInitials(name)}</span>`;
+}
+
+const teamBadgeUpdaters = [];
+function wireTeamBadge(selectEl, badgeEl){
+  if(!selectEl || !badgeEl) return;
+  const update = ()=>{ badgeEl.innerHTML = teamBadgeHTML(selectEl.value); };
+  selectEl.addEventListener('change', update);
+  teamBadgeUpdaters.push(update);
+  update();
+}
+function refreshTeamBadges(){ teamBadgeUpdaters.forEach(fn=>fn()); }
+
+// ---------- Mascot avatars ----------
+const AVATARS = [
+  {id:'lion', emoji:'🦁'}, {id:'fox', emoji:'🦊'}, {id:'panda', emoji:'🐼'},
+  {id:'owl', emoji:'🦉'}, {id:'frog', emoji:'🐸'}, {id:'octopus', emoji:'🐙'},
+  {id:'unicorn', emoji:'🦄'}, {id:'bee', emoji:'🐝'}, {id:'penguin', emoji:'🐧'},
+  {id:'koala', emoji:'🐨'}, {id:'shark', emoji:'🦈'}, {id:'wolf', emoji:'🐺'},
+];
+let selectedAvatar = null;
+
+function avatarEmoji(id){
+  const found = AVATARS.find(a=>a.id===id);
+  return found ? found.emoji : '⚽';
+}
+
+function renderAvatarPicker(){
+  const wrap = document.getElementById('avatarPicker');
+  wrap.innerHTML = AVATARS.map(a=>`<button type="button" class="avatar-option" data-avatar="${a.id}" title="${a.id}">${a.emoji}</button>`).join('');
+  wrap.querySelectorAll('.avatar-option').forEach(btn=>{
+    btn.addEventListener('click', ()=>setSelectedAvatar(btn.dataset.avatar));
+  });
+}
+
+function setSelectedAvatar(id){
+  selectedAvatar = id;
+  document.querySelectorAll('#avatarPicker .avatar-option').forEach(btn=>{
+    btn.classList.toggle('selected', btn.dataset.avatar === id);
+  });
+}
+
 function buildRankRow(container, idPrefix, index, label, isRelegation){
   const row = document.createElement('div');
   row.className = 'rank-row';
+  const selectId = `${idPrefix}_${index}`;
   row.innerHTML = `
     <div class="rank-badge ${isRelegation?'rel':''}">${label}</div>
-    <select id="${idPrefix}_${index}">${teamOptionsHTML('')}</select>
+    <select id="${selectId}">${teamOptionsHTML('')}</select>
+    <span class="team-badge-slot" id="${selectId}_badge"></span>
   `;
   container.appendChild(row);
+  wireTeamBadge(document.getElementById(selectId), document.getElementById(selectId+'_badge'));
 }
 
 function initForm(){
@@ -587,6 +724,8 @@ function initForm(){
 
   document.getElementById('bestDefence').innerHTML = teamOptionsHTML('');
   document.getElementById('bestAttack').innerHTML = teamOptionsHTML('');
+  wireTeamBadge(document.getElementById('bestDefence'), document.getElementById('bestDefence_badge'));
+  wireTeamBadge(document.getElementById('bestAttack'), document.getElementById('bestAttack_badge'));
 
   const actualTop6Rows = document.getElementById('actualTop6Rows');
   ["1","2","3","4","5","6"].forEach((label,i)=>buildRankRow(actualTop6Rows,'actualTop6',i,label,false));
@@ -596,6 +735,8 @@ function initForm(){
 
   document.getElementById('actualBestDefence').innerHTML = teamOptionsHTML('');
   document.getElementById('actualBestAttack').innerHTML = teamOptionsHTML('');
+  wireTeamBadge(document.getElementById('actualBestDefence'), document.getElementById('actualBestDefence_badge'));
+  wireTeamBadge(document.getElementById('actualBestAttack'), document.getElementById('actualBestAttack_badge'));
 }
 
 // ---------- Tabs ----------
@@ -615,6 +756,7 @@ function readPredictionForm(){
   const bottom3 = [0,1,2].map(i=>document.getElementById('bottom3_'+i).value);
   return {
     name: document.getElementById('playerName').value.trim(),
+    avatar: selectedAvatar,
     top6, bottom3,
     goldenBoot: document.getElementById('goldenBoot').value.trim(),
     goldenGlove: document.getElementById('goldenGlove').value.trim(),
@@ -633,6 +775,8 @@ function fillPredictionForm(data){
   document.getElementById('topAssist').value = data.topAssist || '';
   document.getElementById('bestDefence').value = data.bestDefence || '';
   document.getElementById('bestAttack').value = data.bestAttack || '';
+  setSelectedAvatar(data.avatar || null);
+  refreshTeamBadges();
 }
 
 function readActualForm(){
@@ -657,6 +801,7 @@ function fillActualForm(data){
   document.getElementById('actualTopAssist').value = data.topAssist || '';
   document.getElementById('actualBestDefence').value = data.bestDefence || '';
   document.getElementById('actualBestAttack').value = data.bestAttack || '';
+  refreshTeamBadges();
 }
 
 function showStatus(elId, msg, isError, duration=4000){
@@ -795,6 +940,7 @@ document.getElementById('autofillBtn').addEventListener('click', async ()=>{
     document.getElementById('actualBestAttack').value = stats.bestAttack || '';
     document.getElementById('actualGoldenBoot').value = stats.goldenBoot ? stats.goldenBoot.name : '';
     document.getElementById('actualTopAssist').value = stats.topAssist ? stats.topAssist.name : '';
+    refreshTeamBadges();
     const asOf = data.updated_at ? new Date(data.updated_at).toLocaleString() : 'an unknown time';
     showStatus('adminStatus', `Autofilled from live data as of ${asOf}. Golden Glove and Best Defence aren't available live — fill those in yourself. Review everything, then Save.`, false, 0);
   }catch(err){
@@ -869,16 +1015,22 @@ function scorePrediction(pred, actual){
   return { total, lines };
 }
 
+function teamListHTML(teams){
+  const list = (teams||[]).filter(Boolean);
+  if(!list.length) return null;
+  return `<div class="badge-list">${list.map(t=>`<span class="badge-list-item">${teamBadgeHTML(t)}<span>${t}</span></span>`).join('')}</div>`;
+}
+
 function renderActualSummary(actual){
   const wrap = document.getElementById('actualSummary');
   const cards = [
-    ['Top 6', (actual.top6||[]).filter(Boolean).length ? (actual.top6||[]).filter(Boolean).join(', ') : null],
-    ['Bottom 3', (actual.bottom3||[]).filter(Boolean).length ? (actual.bottom3||[]).filter(Boolean).join(', ') : null],
+    ['Top 6', teamListHTML(actual.top6)],
+    ['Bottom 3', teamListHTML(actual.bottom3)],
     ['Golden Boot', actual.goldenBoot || null],
     ['Golden Glove', actual.goldenGlove || null],
     ['Most Assists', actual.topAssist || null],
-    ['Best Defence', actual.bestDefence || null],
-    ['Best Attack', actual.bestAttack || null],
+    ['Best Defence', actual.bestDefence ? teamListHTML([actual.bestDefence]) : null],
+    ['Best Attack', actual.bestAttack ? teamListHTML([actual.bestAttack]) : null],
   ];
   wrap.innerHTML = cards.map(([k,v])=>`
     <div class="actual-card">
@@ -906,19 +1058,21 @@ async function renderLeaderboard(){
 
   const scored = preds.map(p=>{
     const {total, lines} = scorePrediction(p, actual);
-    return { name: p.name, total, lines };
+    return { name: p.name, avatar: p.avatar, total, lines };
   }).sort((a,b)=>b.total - a.total);
 
   const board = document.createElement('div');
   board.className = 'scoreboard';
   board.innerHTML = `<div class="scoreboard-head"><div>#</div><div>Name</div><div style="text-align:right;">Points</div></div>`;
 
+  const medalClass = ['gold','silver','bronze'];
   scored.forEach((s,i)=>{
     const row = document.createElement('div');
     row.className = 'score-row';
+    const rankClass = i < 3 ? `medal ${medalClass[i]}` : '';
     row.innerHTML = `
-      <div class="rank-num ${i===0?'gold':''}">${i+1}</div>
-      <div class="player-name">${s.name}</div>
+      <div class="rank-num ${rankClass}">${i+1}</div>
+      <div class="player-name"><span class="avatar-badge">${avatarEmoji(s.avatar)}</span>${s.name}</div>
       <div class="points">${s.total}</div>
     `;
     const breakdown = document.createElement('div');
@@ -963,6 +1117,7 @@ async function loadPlayerSuggestions(){
 }
 
 initForm();
+renderAvatarPicker();
 loadPlayerSuggestions();
 </script>
 </body>
