@@ -61,3 +61,21 @@ alter table players enable row level security;
 
 create policy "Public read players" on players
   for select using (true);
+
+-- Single row holding the latest live Premier League standings/scorers pulled
+-- from football-data.org, used by the "Autofill from live data" button on
+-- the Update Results admin tab. Kept fresh by the scheduled "Sync Live
+-- Results" GitHub Actions workflow (scripts/sync-live-stats.mjs), which
+-- writes here using the service_role key — read-only from the browser, same
+-- as the players table. This is a starting point for the admin to review,
+-- not an automatic publish: it only pre-fills the form.
+create table if not exists live_stats (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table live_stats enable row level security;
+
+create policy "Public read live_stats" on live_stats
+  for select using (true);

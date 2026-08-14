@@ -416,6 +416,8 @@
       <div class="chit">
         <p class="chit-title">Update Actual Results</p>
         <p class="chit-desc">Whatever you save here is what everyone's predictions get scored against. Leave a field on its placeholder ("—") if it isn't decided yet — it will just be skipped when scoring.</p>
+        <button class="btn secondary" id="autofillBtn" type="button">Autofill from live data</button>
+        <p class="helper" style="margin-top:8px;margin-bottom:0;">Pulls Top 6, Bottom 3, Best Attack, Golden Boot and Most Assists from the last live sync. Golden Glove and Best Defence aren't available from live data — enter those yourself. Nothing is saved until you click "Save Actual Results" below, so review before saving.</p>
       </div>
 
       <div class="chit">
@@ -657,12 +659,13 @@ function fillActualForm(data){
   document.getElementById('actualBestAttack').value = data.bestAttack || '';
 }
 
-function showStatus(elId, msg, isError){
+function showStatus(elId, msg, isError, duration=4000){
   const el = document.getElementById(elId);
   el.textContent = msg;
   el.classList.add('show');
   el.classList.toggle('error', !!isError);
-  setTimeout(()=>el.classList.remove('show'), 4000);
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(()=>el.classList.remove('show'), duration);
 }
 
 function requireBackend(statusElId){
@@ -770,6 +773,31 @@ document.getElementById('adminUnlockBtn').addEventListener('click', async ()=>{
   } else {
     document.getElementById('adminError').style.display = 'block';
   }
+});
+
+document.getElementById('autofillBtn').addEventListener('click', async ()=>{
+  if(!requireBackend('adminStatus')) return;
+  const btn = document.getElementById('autofillBtn');
+  btn.disabled = true;
+  try{
+    const { data, error } = await db.from('live_stats').select('data,updated_at').eq('id','current').maybeSingle();
+    if(error || !data){
+      showStatus('adminStatus','No live data synced yet — run "Sync Live Results" in GitHub Actions first.', true, 6000);
+      return;
+    }
+    const stats = data.data || {};
+    (stats.top6||[]).forEach((v,i)=>{ const el=document.getElementById('actualTop6_'+i); if(el) el.value = v || ''; });
+    (stats.bottom3||[]).forEach((v,i)=>{ const el=document.getElementById('actualBottom3_'+i); if(el) el.value = v || ''; });
+    document.getElementById('actualBestAttack').value = stats.bestAttack || '';
+    document.getElementById('actualGoldenBoot').value = stats.goldenBoot ? stats.goldenBoot.name : '';
+    document.getElementById('actualTopAssist').value = stats.topAssist ? stats.topAssist.name : '';
+    const asOf = data.updated_at ? new Date(data.updated_at).toLocaleString() : 'an unknown time';
+    showStatus('adminStatus', `Autofilled from live data as of ${asOf}. Golden Glove and Best Defence aren't available live — fill those in yourself. Review everything, then Save.`, false, 8000);
+  }catch(err){
+    console.error(err);
+    showStatus('adminStatus','Could not load live data right now — try again.', true, 6000);
+  }
+  btn.disabled = false;
 });
 
 document.getElementById('saveActualBtn').addEventListener('click', async ()=>{

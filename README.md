@@ -88,6 +88,25 @@ The page reads from that table on load and swaps in the live names automatically
 until the workflow has run at least once, it just keeps showing the static
 fallback list, so the site works fine either way.
 
+## Autofilling actual results from live data (optional)
+
+If you've already done the football-data.org + `service_role` setup above for the
+award suggestions, this reuses the same three secrets — nothing new to add.
+
+The **Sync Live Results** workflow (`.github/workflows/sync-live-stats.yml`) runs
+daily (and can be triggered manually from the **Actions** tab), pulling current
+league standings and top scorers from football-data.org into the `live_stats`
+table (`scripts/sync-live-stats.mjs` does the work).
+
+On the **Update Results** admin tab, after unlocking with the passcode, there's now
+an **Autofill from live data** button. It pre-fills Top 6, Bottom 3, Best Attack,
+Golden Boot and Most Assists from the last sync — but doesn't save anything by
+itself, so you can review before clicking **Save Actual Results**.
+
+Two fields are always left for you to fill in by hand: **Golden Glove** and **Best
+Defence**. football-data.org's free tier doesn't expose goalkeeper-specific or
+team clean sheet counts, so there's no reliable live source for those.
+
 ## Changing the admin passcode
 
 The "Update Results" tab is gated by a passcode set in `index.html`:
