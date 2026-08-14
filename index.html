@@ -665,7 +665,9 @@ function showStatus(elId, msg, isError, duration=4000){
   el.classList.add('show');
   el.classList.toggle('error', !!isError);
   clearTimeout(el._hideTimer);
-  el._hideTimer = setTimeout(()=>el.classList.remove('show'), duration);
+  if(duration > 0){
+    el._hideTimer = setTimeout(()=>el.classList.remove('show'), duration);
+  }
 }
 
 function requireBackend(statusElId){
@@ -778,11 +780,13 @@ document.getElementById('adminUnlockBtn').addEventListener('click', async ()=>{
 document.getElementById('autofillBtn').addEventListener('click', async ()=>{
   if(!requireBackend('adminStatus')) return;
   const btn = document.getElementById('autofillBtn');
+  const originalLabel = btn.textContent;
   btn.disabled = true;
+  btn.textContent = 'Loading…';
   try{
     const { data, error } = await db.from('live_stats').select('data,updated_at').eq('id','current').maybeSingle();
     if(error || !data){
-      showStatus('adminStatus','No live data synced yet — run "Sync Live Results" in GitHub Actions first.', true, 6000);
+      showStatus('adminStatus','No live data synced yet — run "Sync Live Results" in GitHub Actions first.', true, 0);
       return;
     }
     const stats = data.data || {};
@@ -792,12 +796,14 @@ document.getElementById('autofillBtn').addEventListener('click', async ()=>{
     document.getElementById('actualGoldenBoot').value = stats.goldenBoot ? stats.goldenBoot.name : '';
     document.getElementById('actualTopAssist').value = stats.topAssist ? stats.topAssist.name : '';
     const asOf = data.updated_at ? new Date(data.updated_at).toLocaleString() : 'an unknown time';
-    showStatus('adminStatus', `Autofilled from live data as of ${asOf}. Golden Glove and Best Defence aren't available live — fill those in yourself. Review everything, then Save.`, false, 8000);
+    showStatus('adminStatus', `Autofilled from live data as of ${asOf}. Golden Glove and Best Defence aren't available live — fill those in yourself. Review everything, then Save.`, false, 0);
   }catch(err){
     console.error(err);
-    showStatus('adminStatus','Could not load live data right now — try again.', true, 6000);
+    showStatus('adminStatus','Could not load live data right now — try again.', true, 0);
+  }finally{
+    btn.disabled = false;
+    btn.textContent = originalLabel;
   }
-  btn.disabled = false;
 });
 
 document.getElementById('saveActualBtn').addEventListener('click', async ()=>{
