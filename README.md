@@ -124,6 +124,24 @@ Like the passcode gate, these are convenience controls, not hard security — an
 with the site's `anon` key could still write to the site's data directly. Fine for
 a friends & family pool; don't rely on it for anything that needs real enforcement.
 
+## PIN-protected editing
+
+On first save, each player sets a 4-digit PIN alongside their name. From then on,
+both **Load my saved picks** and re-saving over that name require the matching
+PIN — this stops someone else from loading (or overwriting) another player's
+picks just by typing their name. Predictions saved before this feature existed
+have no PIN yet; the next save on one of those simply sets a PIN going forward,
+no matching required that first time.
+
+If someone forgets their PIN, use **Reset a Player's PIN** on the Update Results
+admin tab: enter their name and a new 4-digit PIN, and they can use that from
+then on. Their saved picks aren't touched, only the PIN.
+
+Note the PIN is stored in plain text inside each prediction's data (same public
+`predictions` table as everything else) — it stops casual mix-ups and snooping
+among friends, not someone deliberately reading the table via the `anon` key.
+Same trust model as the rest of the admin controls.
+
 ## Changing the admin passcode
 
 The "Update Results" tab is gated by a passcode set in `index.html`:
