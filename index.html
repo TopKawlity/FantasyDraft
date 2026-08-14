@@ -611,7 +611,7 @@
     </div>
 
     <div class="chit">
-      <p class="section-heading">Team Records</p>
+      <p class="section-heading">Extra Time</p>
       <p class="chit-desc">Pick a club for each. Correct = 15 pts each.</p>
       <div class="two-col">
         <div>
@@ -626,6 +626,38 @@
           <div class="select-with-badge">
             <select id="bestAttack"></select>
             <span class="team-badge-slot" id="bestAttack_badge"></span>
+          </div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div>
+          <label class="field-label">Most Cards (Red + Yellow)</label>
+          <div class="select-with-badge">
+            <select id="mostCards"></select>
+            <span class="team-badge-slot" id="mostCards_badge"></span>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">First Manager Sacked</label>
+          <div class="select-with-badge">
+            <select id="managerSacked"></select>
+            <span class="team-badge-slot" id="managerSacked_badge"></span>
+          </div>
+        </div>
+      </div>
+      <div class="two-col">
+        <div>
+          <label class="field-label">Longest Unbeaten Run</label>
+          <div class="select-with-badge">
+            <select id="longestUnbeaten"></select>
+            <span class="team-badge-slot" id="longestUnbeaten_badge"></span>
+          </div>
+        </div>
+        <div>
+          <label class="field-label">Best Promoted Club</label>
+          <div class="select-with-badge">
+            <select id="bestPromoted"></select>
+            <span class="team-badge-slot" id="bestPromoted_badge"></span>
           </div>
         </div>
       </div>
@@ -694,7 +726,7 @@
         <p class="chit-title">Update Actual Results</p>
         <p class="chit-desc">Whatever you save here is what everyone's predictions get scored against. Leave a field on its placeholder ("—") if it isn't decided yet — it will just be skipped when scoring.</p>
         <button class="btn secondary" id="autofillBtn" type="button">Autofill from live data</button>
-        <p class="helper" style="margin-top:8px;margin-bottom:0;">Pulls Top 6, Bottom 3, Best Attack, Golden Boot and Most Assists from the last live sync. Golden Glove and Best Defence aren't available from live data — enter those yourself. Nothing is saved until you click "Save Actual Results" below, so review before saving.</p>
+        <p class="helper" style="margin-top:8px;margin-bottom:0;">Pulls Top 6, Bottom 3, Best Attack, Golden Boot and Most Assists from the last live sync. Golden Glove, Best Defence, and everything in Extra Time aren't available from live data — enter those yourself. Nothing is saved until you click "Save Actual Results" below, so review before saving.</p>
       </div>
 
       <div class="chit">
@@ -726,7 +758,7 @@
       </div>
 
       <div class="chit">
-        <p class="section-heading">Team Records</p>
+        <p class="section-heading">Extra Time</p>
         <div class="two-col">
           <div>
             <label class="field-label">Best Defence</label>
@@ -743,6 +775,38 @@
             </div>
           </div>
         </div>
+        <div class="two-col">
+          <div>
+            <label class="field-label">Most Cards (Red + Yellow)</label>
+            <div class="select-with-badge">
+              <select id="actualMostCards"></select>
+              <span class="team-badge-slot" id="actualMostCards_badge"></span>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">First Manager Sacked</label>
+            <div class="select-with-badge">
+              <select id="actualManagerSacked"></select>
+              <span class="team-badge-slot" id="actualManagerSacked_badge"></span>
+            </div>
+          </div>
+        </div>
+        <div class="two-col">
+          <div>
+            <label class="field-label">Longest Unbeaten Run</label>
+            <div class="select-with-badge">
+              <select id="actualLongestUnbeaten"></select>
+              <span class="team-badge-slot" id="actualLongestUnbeaten_badge"></span>
+            </div>
+          </div>
+          <div>
+            <label class="field-label">Best Promoted Club</label>
+            <div class="select-with-badge">
+              <select id="actualBestPromoted"></select>
+              <span class="team-badge-slot" id="actualBestPromoted_badge"></span>
+            </div>
+          </div>
+        </div>
       </div>
 
       <button class="btn" id="saveActualBtn" type="button">Save Actual Results</button>
@@ -750,7 +814,7 @@
     </div>
   </div>
 
-  <p class="footer-note">Predictions and results are visible to everyone in this pool. Scoring: Top 6 &amp; Bottom 3 exact spot = 10 pts, right group wrong spot = 4 pts · Awards = 20 pts · Team records = 15 pts.</p>
+  <p class="footer-note">Predictions and results are visible to everyone in this pool. Scoring: Top 6 &amp; Bottom 3 exact spot = 10 pts, right group wrong spot = 4 pts · Awards = 20 pts · Extra Time picks = 15 pts.</p>
 </div>
 
 <div class="save-celebration" id="saveCelebration">
@@ -871,6 +935,11 @@ const TEAMS = [
   "Newcastle United","Nottingham Forest","Sunderland","Tottenham Hotspur"
 ].sort();
 
+// This season's three promoted clubs — the "Best Promoted Club" question is
+// restricted to just these, unlike every other team-pick field which offers
+// the full TEAMS list.
+const PROMOTED_TEAMS = ["Coventry City", "Hull City", "Ipswich Town"];
+
 const ACTUAL_ROW_ID = "actual";
 const ADMIN_PASS = "boot2026"; // change this in the code if you want a different passcode
 
@@ -879,6 +948,14 @@ const SCORES = { exactTable:10, partialTable:4, award:20, teamRecord:15 };
 function teamOptionsHTML(selectedVal){
   let html = '<option value="">— Select club —</option>';
   TEAMS.forEach(t=>{
+    html += `<option value="${t}" ${t===selectedVal?'selected':''}>${t}</option>`;
+  });
+  return html;
+}
+
+function promotedOptionsHTML(selectedVal){
+  let html = '<option value="">— Select club —</option>';
+  PROMOTED_TEAMS.forEach(t=>{
     html += `<option value="${t}" ${t===selectedVal?'selected':''}>${t}</option>`;
   });
   return html;
@@ -987,6 +1064,20 @@ function buildRankRow(container, idPrefix, index, label, isRelegation){
   wireTeamBadge(document.getElementById(selectId), document.getElementById(selectId+'_badge'));
 }
 
+function initTeamSelect(id){
+  const select = document.getElementById(id);
+  select.innerHTML = teamOptionsHTML('');
+  wireTeamBadge(select, document.getElementById(id+'_badge'));
+}
+
+function initPromotedSelect(id){
+  const select = document.getElementById(id);
+  select.innerHTML = promotedOptionsHTML('');
+  wireTeamBadge(select, document.getElementById(id+'_badge'));
+}
+
+const TEAM_PICK_FIELDS = ['bestDefence','bestAttack','mostCards','managerSacked','longestUnbeaten'];
+
 function initForm(){
   const top6Rows = document.getElementById('top6Rows');
   ["1","2","3","4","5","6"].forEach((label,i)=>buildRankRow(top6Rows,'top6',i,label,false));
@@ -994,10 +1085,8 @@ function initForm(){
   const bottom3Rows = document.getElementById('bottom3Rows');
   ["18","19","20"].forEach((label,i)=>buildRankRow(bottom3Rows,'bottom3',i,label,true));
 
-  document.getElementById('bestDefence').innerHTML = teamOptionsHTML('');
-  document.getElementById('bestAttack').innerHTML = teamOptionsHTML('');
-  wireTeamBadge(document.getElementById('bestDefence'), document.getElementById('bestDefence_badge'));
-  wireTeamBadge(document.getElementById('bestAttack'), document.getElementById('bestAttack_badge'));
+  TEAM_PICK_FIELDS.forEach(initTeamSelect);
+  initPromotedSelect('bestPromoted');
 
   const actualTop6Rows = document.getElementById('actualTop6Rows');
   ["1","2","3","4","5","6"].forEach((label,i)=>buildRankRow(actualTop6Rows,'actualTop6',i,label,false));
@@ -1005,10 +1094,8 @@ function initForm(){
   const actualBottom3Rows = document.getElementById('actualBottom3Rows');
   ["18","19","20"].forEach((label,i)=>buildRankRow(actualBottom3Rows,'actualBottom3',i,label,true));
 
-  document.getElementById('actualBestDefence').innerHTML = teamOptionsHTML('');
-  document.getElementById('actualBestAttack').innerHTML = teamOptionsHTML('');
-  wireTeamBadge(document.getElementById('actualBestDefence'), document.getElementById('actualBestDefence_badge'));
-  wireTeamBadge(document.getElementById('actualBestAttack'), document.getElementById('actualBestAttack_badge'));
+  TEAM_PICK_FIELDS.forEach(id=>initTeamSelect('actual'+id[0].toUpperCase()+id.slice(1)));
+  initPromotedSelect('actualBestPromoted');
 }
 
 // ---------- Tabs ----------
@@ -1023,10 +1110,12 @@ document.querySelectorAll('.tab-btn').forEach(btn=>{
 });
 
 // ---------- Helpers to read/write form ----------
+const ALL_TEAM_PICK_FIELDS = [...TEAM_PICK_FIELDS, 'bestPromoted'];
+
 function readPredictionForm(){
   const top6 = [0,1,2,3,4,5].map(i=>document.getElementById('top6_'+i).value);
   const bottom3 = [0,1,2].map(i=>document.getElementById('bottom3_'+i).value);
-  return {
+  const data = {
     name: document.getElementById('playerName').value.trim(),
     pin: document.getElementById('playerPin').value.trim(),
     avatar: selectedAvatar,
@@ -1034,10 +1123,10 @@ function readPredictionForm(){
     goldenBoot: document.getElementById('goldenBoot').value.trim(),
     goldenGlove: document.getElementById('goldenGlove').value.trim(),
     topAssist: document.getElementById('topAssist').value.trim(),
-    bestDefence: document.getElementById('bestDefence').value,
-    bestAttack: document.getElementById('bestAttack').value,
     updatedAt: new Date().toISOString()
   };
+  ALL_TEAM_PICK_FIELDS.forEach(id=>{ data[id] = document.getElementById(id).value; });
+  return data;
 }
 
 function fillPredictionForm(data){
@@ -1046,8 +1135,7 @@ function fillPredictionForm(data){
   document.getElementById('goldenBoot').value = data.goldenBoot || '';
   document.getElementById('goldenGlove').value = data.goldenGlove || '';
   document.getElementById('topAssist').value = data.topAssist || '';
-  document.getElementById('bestDefence').value = data.bestDefence || '';
-  document.getElementById('bestAttack').value = data.bestAttack || '';
+  ALL_TEAM_PICK_FIELDS.forEach(id=>{ document.getElementById(id).value = data[id] || ''; });
   setSelectedAvatar(data.avatar || null);
   refreshTeamBadges();
 }
@@ -1055,15 +1143,18 @@ function fillPredictionForm(data){
 function readActualForm(){
   const top6 = [0,1,2,3,4,5].map(i=>document.getElementById('actualTop6_'+i).value);
   const bottom3 = [0,1,2].map(i=>document.getElementById('actualBottom3_'+i).value);
-  return {
+  const data = {
     top6, bottom3,
     goldenBoot: document.getElementById('actualGoldenBoot').value.trim(),
     goldenGlove: document.getElementById('actualGoldenGlove').value.trim(),
     topAssist: document.getElementById('actualTopAssist').value.trim(),
-    bestDefence: document.getElementById('actualBestDefence').value,
-    bestAttack: document.getElementById('actualBestAttack').value,
     lastUpdated: new Date().toISOString()
   };
+  ALL_TEAM_PICK_FIELDS.forEach(id=>{
+    const actualId = 'actual'+id[0].toUpperCase()+id.slice(1);
+    data[id] = document.getElementById(actualId).value;
+  });
+  return data;
 }
 
 function fillActualForm(data){
@@ -1072,8 +1163,10 @@ function fillActualForm(data){
   document.getElementById('actualGoldenBoot').value = data.goldenBoot || '';
   document.getElementById('actualGoldenGlove').value = data.goldenGlove || '';
   document.getElementById('actualTopAssist').value = data.topAssist || '';
-  document.getElementById('actualBestDefence').value = data.bestDefence || '';
-  document.getElementById('actualBestAttack').value = data.bestAttack || '';
+  ALL_TEAM_PICK_FIELDS.forEach(id=>{
+    const actualId = 'actual'+id[0].toUpperCase()+id.slice(1);
+    document.getElementById(actualId).value = data[id] || '';
+  });
   refreshTeamBadges();
 }
 
@@ -1362,7 +1455,7 @@ document.getElementById('autofillBtn').addEventListener('click', async ()=>{
     document.getElementById('actualTopAssist').value = stats.topAssist ? stats.topAssist.name : '';
     refreshTeamBadges();
     const asOf = data.updated_at ? new Date(data.updated_at).toLocaleString() : 'an unknown time';
-    showStatus('adminStatus', `Autofilled from live data as of ${asOf}. Golden Glove and Best Defence aren't available live — fill those in yourself. Review everything, then Save.`, false, 0);
+    showStatus('adminStatus', `Autofilled from live data as of ${asOf}. Golden Glove, Best Defence, and Extra Time aren't available live — fill those in yourself. Review everything, then Save.`, false, 0);
   }catch(err){
     console.error(err);
     showStatus('adminStatus','Could not load live data right now — try again.', true, 0);
@@ -1432,6 +1525,10 @@ function scorePrediction(pred, actual){
   }
   total += scoreTeamRecord(pred.bestDefence, actual.bestDefence, 'Best Defence');
   total += scoreTeamRecord(pred.bestAttack, actual.bestAttack, 'Best Attack');
+  total += scoreTeamRecord(pred.mostCards, actual.mostCards, 'Most Cards');
+  total += scoreTeamRecord(pred.managerSacked, actual.managerSacked, 'First Manager Sacked');
+  total += scoreTeamRecord(pred.longestUnbeaten, actual.longestUnbeaten, 'Longest Unbeaten Run');
+  total += scoreTeamRecord(pred.bestPromoted, actual.bestPromoted, 'Best Promoted Club');
 
   return { total, lines };
 }
@@ -1452,6 +1549,10 @@ function renderActualSummary(actual){
     ['Most Assists', actual.topAssist || null],
     ['Best Defence', actual.bestDefence ? teamListHTML([actual.bestDefence]) : null],
     ['Best Attack', actual.bestAttack ? teamListHTML([actual.bestAttack]) : null],
+    ['Most Cards', actual.mostCards ? teamListHTML([actual.mostCards]) : null],
+    ['1st Manager Sacked', actual.managerSacked ? teamListHTML([actual.managerSacked]) : null],
+    ['Longest Unbeaten Run', actual.longestUnbeaten ? teamListHTML([actual.longestUnbeaten]) : null],
+    ['Best Promoted Club', actual.bestPromoted ? teamListHTML([actual.bestPromoted]) : null],
   ];
   wrap.innerHTML = cards.map(([k,v])=>`
     <div class="actual-card">
