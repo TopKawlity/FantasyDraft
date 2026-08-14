@@ -147,7 +147,7 @@
     color:var(--ink-soft);
     margin-bottom:5px;
   }
-  input[type=text], select{
+  input[type=text], input[type=password], select{
     width:100%;
     padding:10px 11px;
     border:2px solid var(--paper-line);
@@ -158,7 +158,7 @@
     font-size:14px;
     margin-bottom:14px;
   }
-  input[type=text]:focus, select:focus{
+  input[type=text]:focus, input[type=password]:focus, select:focus{
     outline:none;border-color:var(--gold);background:var(--white);
   }
   .field-group{margin-bottom:22px;}
@@ -197,7 +197,7 @@
     width:40px;height:40px;
     border-radius:50%;
     border:2px solid var(--paper-line);
-    background:var(--paper);
+    background:var(--white);
     font-size:19px;
     line-height:1;
     display:flex;align-items:center;justify-content:center;
@@ -434,7 +434,10 @@
       <p class="chit-title">Your Name</p>
       <p class="chit-desc">Type the name you want on the scoreboard. If it matches a name already saved, we'll load your existing picks so you can edit them.</p>
       <input type="text" id="playerName" placeholder="e.g. Sushant">
-      <label class="field-label" style="margin-top:2px;">Pick your mascot</label>
+      <label class="field-label" style="margin-top:2px;">4-digit PIN</label>
+      <input type="password" id="playerPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="1234" autocomplete="off">
+      <p class="helper" style="margin-top:-6px;">This will be required if you want to come back and edit your picks.</p>
+      <label class="field-label">Pick your mascot</label>
       <div class="avatar-picker" id="avatarPicker"></div>
       <button class="btn secondary" id="loadMineBtn" type="button">Load my saved picks</button>
       <div class="status-msg" id="loadStatus"></div>
@@ -533,6 +536,23 @@
             <p class="helper" id="revealStatusText" style="margin-top:8px;">Picks are hidden — only points are shown.</p>
           </div>
         </div>
+      </div>
+
+      <div class="chit">
+        <p class="chit-title">Reset a Player's PIN</p>
+        <p class="chit-desc">If someone forgets their PIN, look them up by name and set a new one for them to use.</p>
+        <div class="two-col">
+          <div>
+            <label class="field-label">Player name</label>
+            <input type="text" id="resetPinName" placeholder="e.g. Sushant">
+          </div>
+          <div>
+            <label class="field-label">New 4-digit PIN</label>
+            <input type="password" id="resetPinValue" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="1234" autocomplete="off">
+          </div>
+        </div>
+        <button class="btn secondary" id="resetPinBtn" type="button">Reset PIN</button>
+        <div class="status-msg" id="resetPinStatus"></div>
       </div>
 
       <div class="chit">
@@ -755,10 +775,14 @@ function refreshTeamBadges(){ teamBadgeUpdaters.forEach(fn=>fn()); }
 
 // ---------- Mascot avatars ----------
 const AVATARS = [
-  {id:'lion', emoji:'🦁'}, {id:'fox', emoji:'🦊'}, {id:'panda', emoji:'🐼'},
-  {id:'owl', emoji:'🦉'}, {id:'frog', emoji:'🐸'}, {id:'octopus', emoji:'🐙'},
-  {id:'unicorn', emoji:'🦄'}, {id:'bee', emoji:'🐝'}, {id:'penguin', emoji:'🐧'},
-  {id:'koala', emoji:'🐨'}, {id:'shark', emoji:'🦈'}, {id:'wolf', emoji:'🐺'},
+  {id:'lion', emoji:'🦁', label:'Lion'}, {id:'fox', emoji:'🦊', label:'Fox'}, {id:'panda', emoji:'🐼', label:'Panda'},
+  {id:'owl', emoji:'🦉', label:'Owl'}, {id:'frog', emoji:'🐸', label:'Frog'}, {id:'octopus', emoji:'🐙', label:'Octopus'},
+  {id:'unicorn', emoji:'🦄', label:'Unicorn'}, {id:'bee', emoji:'🐝', label:'Bee'}, {id:'penguin', emoji:'🐧', label:'Penguin'},
+  {id:'koala', emoji:'🐨', label:'Koala'}, {id:'shark', emoji:'🦈', label:'Shark'}, {id:'wolf', emoji:'🐺', label:'Wolf'},
+  {id:'football', emoji:'⚽', label:'Football'}, {id:'redcard', emoji:'🟥', label:'Red Card'},
+  {id:'yellowcard', emoji:'🟨', label:'Yellow Card'}, {id:'cornerflag', emoji:'🚩', label:'Corner Flag'},
+  {id:'goal', emoji:'🥅', label:'Goal'}, {id:'trophy', emoji:'🏆', label:'Trophy'},
+  {id:'gloves', emoji:'🧤', label:'Gloves'}, {id:'referee', emoji:'🧑‍⚖️', label:'Referee'},
 ];
 let selectedAvatar = null;
 
@@ -769,7 +793,7 @@ function avatarEmoji(id){
 
 function renderAvatarPicker(){
   const wrap = document.getElementById('avatarPicker');
-  wrap.innerHTML = AVATARS.map(a=>`<button type="button" class="avatar-option" data-avatar="${a.id}" title="${a.id}">${a.emoji}</button>`).join('');
+  wrap.innerHTML = AVATARS.map(a=>`<button type="button" class="avatar-option" data-avatar="${a.id}" title="${a.label}">${a.emoji}</button>`).join('');
   wrap.querySelectorAll('.avatar-option').forEach(btn=>{
     btn.addEventListener('click', ()=>setSelectedAvatar(btn.dataset.avatar));
   });
@@ -836,6 +860,7 @@ function readPredictionForm(){
   const bottom3 = [0,1,2].map(i=>document.getElementById('bottom3_'+i).value);
   return {
     name: document.getElementById('playerName').value.trim(),
+    pin: document.getElementById('playerPin').value.trim(),
     avatar: selectedAvatar,
     top6, bottom3,
     goldenBoot: document.getElementById('goldenBoot').value.trim(),
@@ -986,6 +1011,7 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
   if(poolSettings.locked){ showStatus('saveStatus','Predictions are locked — the deadline has passed and editing is closed.', true); return; }
   const data = readPredictionForm();
   if(!data.name){ showStatus('saveStatus','Enter your name first.', true); return; }
+  if(!/^\d{4}$/.test(data.pin)){ showStatus('saveStatus','Enter a 4-digit PIN.', true); return; }
   const top6Filled = data.top6.filter(Boolean);
   if(new Set(top6Filled).size !== top6Filled.length){
     showStatus('saveStatus','Each club can only appear once in your Top 6.', true); return;
@@ -997,6 +1023,12 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
   const btn = document.getElementById('saveBtn');
   btn.disabled = true;
   try{
+    const existing = await loadPrediction(data.name);
+    if(existing && existing.pin && existing.pin !== data.pin){
+      showStatus('saveStatus', 'Incorrect PIN for this name — ask the admin to reset it if you forgot.', true);
+      btn.disabled = false;
+      return;
+    }
     const ok = await savePrediction(data.name, data);
     if(ok){
       showStatus('saveStatus', 'Saved! Your picks are live on the leaderboard.', false);
@@ -1013,10 +1045,16 @@ document.getElementById('saveBtn').addEventListener('click', async ()=>{
 document.getElementById('loadMineBtn').addEventListener('click', async ()=>{
   if(!requireBackend('loadStatus')) return;
   const name = document.getElementById('playerName').value.trim();
+  const pin = document.getElementById('playerPin').value.trim();
   if(!name){ showStatus('loadStatus','Type your name first.', true); return; }
+  if(!/^\d{4}$/.test(pin)){ showStatus('loadStatus','Enter your 4-digit PIN first.', true); return; }
   try{
     const data = await loadPrediction(name);
     if(data){
+      if(data.pin && data.pin !== pin){
+        showStatus('loadStatus','Incorrect PIN for this name.', true);
+        return;
+      }
       fillPredictionForm(data);
       showStatus('loadStatus','Loaded your saved picks — edit and save again to update.', false);
     } else {
@@ -1082,6 +1120,37 @@ document.getElementById('revealToggleBtn').addEventListener('click', async ()=>{
   }catch(err){
     console.error(err);
     showStatus('adminStatus','Could not update — try again.', true);
+  }
+  btn.disabled = false;
+});
+
+document.getElementById('resetPinBtn').addEventListener('click', async ()=>{
+  if(!requireBackend('resetPinStatus')) return;
+  const name = document.getElementById('resetPinName').value.trim();
+  const pin = document.getElementById('resetPinValue').value.trim();
+  if(!name){ showStatus('resetPinStatus','Enter the player\'s name first.', true); return; }
+  if(!/^\d{4}$/.test(pin)){ showStatus('resetPinStatus','New PIN must be exactly 4 digits.', true); return; }
+  const btn = document.getElementById('resetPinBtn');
+  btn.disabled = true;
+  try{
+    const existing = await loadPrediction(name);
+    if(!existing){
+      showStatus('resetPinStatus', `No saved picks found for "${name}".`, true);
+      btn.disabled = false;
+      return;
+    }
+    const updated = Object.assign({}, existing, { pin });
+    const ok = await savePrediction(existing.name || name, updated);
+    if(ok){
+      showStatus('resetPinStatus', `PIN reset for ${existing.name || name}. New PIN: ${pin}`, false);
+      document.getElementById('resetPinName').value = '';
+      document.getElementById('resetPinValue').value = '';
+    } else {
+      showStatus('resetPinStatus','Something went wrong — try again.', true);
+    }
+  }catch(err){
+    console.error(err);
+    showStatus('resetPinStatus','Could not reset PIN right now — try again.', true);
   }
   btn.disabled = false;
 });
@@ -1299,6 +1368,15 @@ async function loadPlayerSuggestions(){
     console.error('Could not load live player suggestions, using built-in list.', err);
   }
 }
+
+function restrictToDigits(el, maxLen){
+  if(!el) return;
+  el.addEventListener('input', ()=>{
+    el.value = el.value.replace(/\D/g,'').slice(0, maxLen);
+  });
+}
+restrictToDigits(document.getElementById('playerPin'), 4);
+restrictToDigits(document.getElementById('resetPinValue'), 4);
 
 initForm();
 renderAvatarPicker();
