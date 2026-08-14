@@ -345,6 +345,11 @@
     border-bottom:1px dotted #234B39;
   }
   .breakdown-line span.val{color:var(--gold);}
+  .breakdown-pick{
+    font-size:11px;
+    color:#8FA89A;
+    margin:-2px 0 6px;
+  }
 
   .empty-state{
     text-align:center;
@@ -469,6 +474,9 @@
       </div>
     </div>
 
+    <div class="config-banner" id="lockedBanner" style="margin-bottom:14px;">
+      Predictions are locked — the deadline has passed and editing is closed. You can still browse the Leaderboard.
+    </div>
     <button class="btn" id="saveBtn" type="button">Save My Predictions</button>
     <div class="status-msg" id="saveStatus"></div>
   </div>
@@ -493,6 +501,21 @@
     </div>
 
     <div id="adminForm" style="display:none;">
+      <div class="chit">
+        <p class="chit-title">Pool Controls</p>
+        <p class="chit-desc">Lock predictions once the deadline passes so no one can edit their picks anymore. Reveal everyone's picks whenever you're ready for people to see each other's predictions, not just points.</p>
+        <div class="two-col">
+          <div>
+            <button class="btn secondary" id="lockToggleBtn" type="button">Lock Predictions</button>
+            <p class="helper" id="lockStatusText" style="margin-top:8px;">Predictions are open for editing.</p>
+          </div>
+          <div>
+            <button class="btn secondary" id="revealToggleBtn" type="button">Reveal Everyone's Picks</button>
+            <p class="helper" id="revealStatusText" style="margin-top:8px;">Picks are hidden — only points are shown.</p>
+          </div>
+        </div>
+      </div>
+
       <div class="chit">
         <p class="chit-title">Update Actual Results</p>
         <p class="chit-desc">Whatever you save here is what everyone's predictions get scored against. Leave a field on its placeholder ("—") if it isn't decided yet — it will just be skipped when scoring.</p>
@@ -896,9 +919,52 @@ async function saveActual(data){
   return !error;
 }
 
+// ---------- Pool controls (lock predictions / reveal picks) ----------
+const POOL_SETTINGS_ROW_ID = "settings";
+let poolSettings = { locked:false, revealPredictions:false };
+
+async function loadPoolSettings(){
+  if(!backendConfigured) return poolSettings;
+  try{
+    const { data, error } = await db.from('pool_settings').select('data').eq('id', POOL_SETTINGS_ROW_ID).maybeSingle();
+    if(!error && data && data.data){
+      poolSettings = Object.assign({ locked:false, revealPredictions:false }, data.data);
+    }
+  }catch(err){
+    console.error('Could not load pool settings, using defaults.', err);
+  }
+  return poolSettings;
+}
+
+async function savePoolSettings(changes){
+  const merged = Object.assign({}, poolSettings, changes);
+  const { error } = await db.from('pool_settings').upsert({
+    id: POOL_SETTINGS_ROW_ID, data: merged, updated_at: new Date().toISOString()
+  });
+  if(!error){ poolSettings = merged; }
+  return !error;
+}
+
+function applyLockUI(){
+  document.getElementById('lockedBanner').classList.toggle('show', poolSettings.locked);
+  document.getElementById('saveBtn').disabled = poolSettings.locked;
+}
+
+function updatePoolControlsUI(){
+  document.getElementById('lockToggleBtn').textContent = poolSettings.locked ? 'Unlock Predictions' : 'Lock Predictions';
+  document.getElementById('lockStatusText').textContent = poolSettings.locked
+    ? 'Predictions are LOCKED — no one can edit their picks.'
+    : 'Predictions are open for editing.';
+  document.getElementById('revealToggleBtn').textContent = poolSettings.revealPredictions ? "Hide Everyone's Picks" : "Reveal Everyone's Picks";
+  document.getElementById('revealStatusText').textContent = poolSettings.revealPredictions
+    ? "Everyone's picks are visible on the leaderboard."
+    : 'Picks are hidden — only points are shown.';
+}
+
 // ---------- Save / Load prediction ----------
 document.getElementById('saveBtn').addEventListener('click', async ()=>{
   if(!requireBackend('saveStatus')) return;
+  if(poolSettings.locked){ showStatus('saveStatus','Predictions are locked — the deadline has passed and editing is closed.', true); return; }
   const data = readPredictionForm();
   if(!data.name){ showStatus('saveStatus','Enter your name first.', true); return; }
   const top6Filled = data.top6.filter(Boolean);
@@ -954,10 +1020,51 @@ document.getElementById('adminUnlockBtn').addEventListener('click', async ()=>{
         const data = await loadActual();
         if(data){ fillActualForm(data); }
       }catch(err){ /* no actual results saved yet, fine */ }
+      await loadPoolSettings();
+      updatePoolControlsUI();
     }
   } else {
     document.getElementById('adminError').style.display = 'block';
   }
+});
+
+document.getElementById('lockToggleBtn').addEventListener('click', async ()=>{
+  if(!requireBackend('adminStatus')) return;
+  const btn = document.getElementById('lockToggleBtn');
+  btn.disabled = true;
+  try{
+    const ok = await savePoolSettings({ locked: !poolSettings.locked });
+    if(ok){
+      updatePoolControlsUI();
+      applyLockUI();
+      showStatus('adminStatus', poolSettings.locked ? 'Predictions are now locked — no one can edit their picks.' : 'Predictions are unlocked — editing is open again.', false);
+    } else {
+      showStatus('adminStatus','Could not update — try again.', true);
+    }
+  }catch(err){
+    console.error(err);
+    showStatus('adminStatus','Could not update — try again.', true);
+  }
+  btn.disabled = false;
+});
+
+document.getElementById('revealToggleBtn').addEventListener('click', async ()=>{
+  if(!requireBackend('adminStatus')) return;
+  const btn = document.getElementById('revealToggleBtn');
+  btn.disabled = true;
+  try{
+    const ok = await savePoolSettings({ revealPredictions: !poolSettings.revealPredictions });
+    if(ok){
+      updatePoolControlsUI();
+      showStatus('adminStatus', poolSettings.revealPredictions ? "Everyone's picks are now visible on the leaderboard." : "Picks are hidden again — only points show.", false);
+    } else {
+      showStatus('adminStatus','Could not update — try again.', true);
+    }
+  }catch(err){
+    console.error(err);
+    showStatus('adminStatus','Could not update — try again.', true);
+  }
+  btn.disabled = false;
 });
 
 document.getElementById('autofillBtn').addEventListener('click', async ()=>{
@@ -1018,12 +1125,13 @@ function scorePrediction(pred, actual){
     let pts = 0;
     const actualFilled = (actualArr||[]).some(Boolean);
     if(!actualFilled) return 0;
+    const pickText = (predArr||[]).filter(Boolean).join(', ') || '—';
     predArr.forEach((team, i)=>{
       if(!team) return;
       if(actualArr[i] === team){ pts += SCORES.exactTable; }
       else if(actualArr.includes(team)){ pts += SCORES.partialTable; }
     });
-    lines.push([label, pts]);
+    lines.push([label, pts, pickText]);
     return pts;
   }
 
@@ -1031,10 +1139,10 @@ function scorePrediction(pred, actual){
   total += scoreGroup(pred.bottom3, actual.bottom3, 'Relegation picks');
 
   function scoreAward(predVal, actualVal, label){
-    if(!actualVal || !predVal) { lines.push([label, 0]); return 0; }
+    if(!actualVal || !predVal) { lines.push([label, 0, predVal || '—']); return 0; }
     const hit = predVal.trim().toLowerCase() === actualVal.trim().toLowerCase();
     const pts = hit ? SCORES.award : 0;
-    lines.push([label, pts]);
+    lines.push([label, pts, predVal]);
     return pts;
   }
   total += scoreAward(pred.goldenBoot, actual.goldenBoot, 'Golden Boot');
@@ -1042,9 +1150,9 @@ function scorePrediction(pred, actual){
   total += scoreAward(pred.topAssist, actual.topAssist, 'Most Assists');
 
   function scoreTeamRecord(predVal, actualVal, label){
-    if(!actualVal || !predVal){ lines.push([label,0]); return 0; }
+    if(!actualVal || !predVal){ lines.push([label,0, predVal || '—']); return 0; }
     const pts = predVal === actualVal ? SCORES.teamRecord : 0;
-    lines.push([label, pts]);
+    lines.push([label, pts, predVal]);
     return pts;
   }
   total += scoreTeamRecord(pred.bestDefence, actual.bestDefence, 'Best Defence');
@@ -1086,7 +1194,7 @@ async function renderLeaderboard(){
     return;
   }
   wrap.innerHTML = '<div class="empty-state">Loading picks…</div>';
-  const [preds, actual] = await Promise.all([loadAllPredictions(), loadActual()]);
+  const [preds, actual] = await Promise.all([loadAllPredictions(), loadActual(), loadPoolSettings()]);
   renderActualSummary(actual);
 
   if(preds.length === 0){
@@ -1116,8 +1224,9 @@ async function renderLeaderboard(){
     `;
     const breakdown = document.createElement('div');
     breakdown.className = 'breakdown';
-    breakdown.innerHTML = s.lines.map(([label,pts])=>`
+    breakdown.innerHTML = s.lines.map(([label,pts,pick])=>`
       <div class="breakdown-line"><span>${label}</span><span class="val">${pts} pts</span></div>
+      ${poolSettings.revealPredictions && pick ? `<div class="breakdown-pick">${escapeAttr(pick)}</div>` : ''}
     `).join('');
     row.addEventListener('click', ()=>breakdown.classList.toggle('show'));
     if(i >= VISIBLE_ROWS_DEFAULT){
@@ -1175,6 +1284,7 @@ async function loadPlayerSuggestions(){
 initForm();
 renderAvatarPicker();
 loadPlayerSuggestions();
+loadPoolSettings().then(applyLockUI);
 </script>
 </body>
 </html>

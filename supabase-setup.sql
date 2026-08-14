@@ -79,3 +79,24 @@ alter table live_stats enable row level security;
 
 create policy "Public read live_stats" on live_stats
   for select using (true);
+
+-- Single row holding pool-wide admin controls: whether predictions are
+-- locked from further editing, and whether everyone's individual picks are
+-- revealed on the leaderboard (not just their points). Same open-write
+-- model as actual_results — gated only by the client-side admin passcode.
+create table if not exists pool_settings (
+  id text primary key,
+  data jsonb not null,
+  updated_at timestamptz not null default now()
+);
+
+alter table pool_settings enable row level security;
+
+create policy "Public read pool_settings" on pool_settings
+  for select using (true);
+
+create policy "Public write pool_settings" on pool_settings
+  for insert with check (true);
+
+create policy "Public update pool_settings" on pool_settings
+  for update using (true) with check (true);

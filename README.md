@@ -107,6 +107,23 @@ Two fields are always left for you to fill in by hand: **Golden Glove** and **Be
 Defence**. football-data.org's free tier doesn't expose goalkeeper-specific or
 team clean sheet counts, so there's no reliable live source for those.
 
+## Locking predictions and revealing picks
+
+The **Update Results** admin tab has a **Pool Controls** card with two toggles,
+both take effect immediately for everyone (no separate save step):
+
+- **Lock Predictions** — once clicked, no one can save changes to their picks
+  anymore (the predict tab shows a banner and the Save button is disabled). Click
+  **Unlock Predictions** to reopen editing. Use this once your deadline (e.g. the
+  transfer window closing) has passed.
+- **Reveal Everyone's Picks** — once clicked, expanding any row on the leaderboard
+  shows what that person actually picked in each category, not just the points
+  they scored. Click **Hide Everyone's Picks** to go back to points-only.
+
+Like the passcode gate, these are convenience controls, not hard security — anyone
+with the site's `anon` key could still write to the site's data directly. Fine for
+a friends & family pool; don't rely on it for anything that needs real enforcement.
+
 ## Changing the admin passcode
 
 The "Update Results" tab is gated by a passcode set in `index.html`:
