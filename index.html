@@ -286,6 +286,7 @@
   }
   .score-row:last-child{border-bottom:none;}
   .score-row:hover{background:var(--pitch-mid);}
+  .row-hidden{display:none;}
   .rank-num{
     font-family:'Anton',sans-serif;
     font-size:22px;
@@ -1103,6 +1104,7 @@ async function renderLeaderboard(){
   board.innerHTML = `<div class="scoreboard-head"><div>#</div><div>Name</div><div style="text-align:right;">Points</div></div>`;
 
   const medalClass = ['gold','silver','bronze'];
+  const VISIBLE_ROWS_DEFAULT = 3;
   scored.forEach((s,i)=>{
     const row = document.createElement('div');
     row.className = 'score-row';
@@ -1118,12 +1120,29 @@ async function renderLeaderboard(){
       <div class="breakdown-line"><span>${label}</span><span class="val">${pts} pts</span></div>
     `).join('');
     row.addEventListener('click', ()=>breakdown.classList.toggle('show'));
+    if(i >= VISIBLE_ROWS_DEFAULT){
+      row.classList.add('row-hidden');
+      breakdown.classList.add('row-hidden');
+    }
     board.appendChild(row);
     board.appendChild(breakdown);
   });
 
   wrap.innerHTML = '';
   wrap.appendChild(board);
+
+  if(scored.length > VISIBLE_ROWS_DEFAULT){
+    const showMoreBtn = document.createElement('button');
+    showMoreBtn.className = 'btn secondary';
+    showMoreBtn.type = 'button';
+    showMoreBtn.style.marginTop = '14px';
+    showMoreBtn.textContent = `Show all ${scored.length} predictions`;
+    showMoreBtn.addEventListener('click', ()=>{
+      board.querySelectorAll('.row-hidden').forEach(el=>el.classList.remove('row-hidden'));
+      showMoreBtn.remove();
+    });
+    wrap.appendChild(showMoreBtn);
+  }
 }
 
 document.getElementById('refreshBoardBtn').addEventListener('click', renderLeaderboard);
