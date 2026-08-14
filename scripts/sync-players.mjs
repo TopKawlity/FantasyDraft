@@ -22,22 +22,17 @@ const FOOTBALL_API_BASE = "https://api.football-data.org/v4";
 const PL_COMPETITION_CODE = "PL";
 const REQUEST_SPACING_MS = 6500; // free tier is capped at 10 requests/minute
 
-// football-data.org's free tier only reports broad position groups
-// (Goalkeeper / Defence / Midfield / Offence), not fine-grained ones like
-// "Attacking Midfield" — so anyone who creates or scores goals, including
-// playmaking midfielders (e.g. Bruno Fernandes), shows up just as
-// "Midfield". Bucket everyone except keepers and out-and-out defenders as
-// a suggestion for Golden Boot / Most Assists, same spirit as the original
-// hand-picked list, which already mixed strikers, wingers and creative
-// midfielders together.
+// Golden Boot / Most Assists can technically go to anyone outfield
+// (defenders score and assist too, not just forwards and midfielders), so
+// every non-goalkeeper is a suggestion there. Golden Glove is goalkeepers
+// only. These are just autocomplete suggestions, not a hard whitelist —
+// the fields still accept any typed name.
 const GOALKEEPER_RE = /goalkeeper/i;
-const DEFENDER_RE = /(defence|defender|-back$|wing-back)/i;
 
 function classifyPosition(position) {
   if (!position) return null;
   if (GOALKEEPER_RE.test(position)) return "keeper";
-  if (DEFENDER_RE.test(position)) return null;
-  return "forward";
+  return "outfield";
 }
 
 function slugify(str) {

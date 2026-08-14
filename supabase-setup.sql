@@ -53,7 +53,7 @@ create table if not exists players (
   id text primary key,
   name text not null,
   team text not null,
-  position text not null check (position in ('forward', 'keeper')),
+  position text not null check (position in ('outfield', 'keeper')),
   updated_at timestamptz not null default now()
 );
 

@@ -913,7 +913,7 @@ async function loadPlayerSuggestions(){
   try{
     const { data, error } = await db.from('players').select('name,position');
     if(error || !data || data.length === 0) return; // no synced players yet — keep fallback
-    const forwards = data.filter(p=>p.position==='forward').map(p=>p.name).sort();
+    const forwards = data.filter(p=>p.position==='outfield').map(p=>p.name).sort();
     const keepers = data.filter(p=>p.position==='keeper').map(p=>p.name).sort();
     if(forwards.length){
       document.getElementById('forwardsList').innerHTML =
