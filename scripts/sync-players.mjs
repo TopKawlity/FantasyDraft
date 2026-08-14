@@ -45,7 +45,8 @@ async function footballDataFetch(path) {
     headers: { "X-Auth-Token": FOOTBALL_DATA_API_KEY },
   });
   if (!res.ok) {
-    throw new Error(`football-data.org request failed (${res.status}): ${path}`);
+    const body = await res.text().catch(() => "");
+    throw new Error(`football-data.org request failed (${res.status}) for ${path}: ${body}`);
   }
   return res.json();
 }
