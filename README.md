@@ -147,7 +147,7 @@ Same trust model as the rest of the admin controls.
 The "Update Results" tab is gated by a passcode set in `index.html`:
 
 ```js
-const ADMIN_PASS = "boot2026";
+const ADMIN_PASS = "boot2627";
 ```
 
 Change it to whatever you like before publishing. Note this is a client-side-only
