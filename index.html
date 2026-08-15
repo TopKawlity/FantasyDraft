@@ -366,6 +366,57 @@
   .status-msg.show{display:block;}
   .status-msg.error{border-color:var(--claret);background:#FDE4E4;}
 
+  /* Deadline countdown */
+  .deadline-clock{
+    display:flex;
+    flex-wrap:wrap;
+    row-gap:6px;
+    align-items:center;
+    gap:10px;
+    background-color:var(--pitch-dark);
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Ccircle cx='150' cy='150' r='70' fill='none' stroke='rgba(255,255,255,0.05)' stroke-width='2'/%3E%3Cline x1='0' y1='150' x2='300' y2='150' stroke='rgba(255,255,255,0.05)' stroke-width='2'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;
+    background-position:center;
+    background-size:cover;
+    border-radius:8px;
+    padding:11px 16px;
+    margin-bottom:20px;
+  }
+  .deadline-clock .lbl{
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:12px;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:#C9BE8A;
+    flex-shrink:0;
+  }
+  .deadline-clock .tiles{display:flex;gap:6px;margin-left:auto;}
+  .deadline-clock .tile{
+    display:flex;
+    align-items:baseline;
+    gap:2px;
+    background:#0F0B00;
+    border:1.5px solid var(--pitch-mid);
+    border-radius:4px;
+    padding:4px 8px;
+  }
+  .deadline-clock .tile .num{
+    font-family:'Oswald',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    color:var(--white);
+    font-variant-numeric:tabular-nums;
+    line-height:1;
+  }
+  .deadline-clock .tile .unit{
+    font-family:'Oswald',sans-serif;
+    font-weight:500;
+    font-size:10px;
+    color:var(--gold);
+    text-transform:lowercase;
+  }
+
   /* Config banner */
   .config-banner{
     background:var(--claret);
@@ -564,6 +615,11 @@
 
   <!-- PREDICT PANEL -->
   <div class="panel active" id="panel-predict">
+
+    <div class="deadline-clock">
+      <span class="lbl">Closes In</span>
+      <div class="tiles" id="deadlineTiles"></div>
+    </div>
 
     <div class="chit">
       <p class="chit-title">Your Name</p>
@@ -1244,14 +1300,14 @@ async function saveActual(data){
 
 // ---------- Pool controls (lock predictions / reveal picks) ----------
 const POOL_SETTINGS_ROW_ID = "settings";
-let poolSettings = { locked:false, revealPredictions:false };
+let poolSettings = { locked:false, revealPredictions:false, deadlineAutoLockApplied:false };
 
 async function loadPoolSettings(){
   if(!backendConfigured) return poolSettings;
   try{
     const { data, error } = await db.from('pool_settings').select('data').eq('id', POOL_SETTINGS_ROW_ID).maybeSingle();
     if(!error && data && data.data){
-      poolSettings = Object.assign({ locked:false, revealPredictions:false }, data.data);
+      poolSettings = Object.assign({ locked:false, revealPredictions:false, deadlineAutoLockApplied:false }, data.data);
     }
   }catch(err){
     console.error('Could not load pool settings, using defaults.', err);
@@ -1282,6 +1338,52 @@ function updatePoolControlsUI(){
   document.getElementById('revealStatusText').textContent = poolSettings.revealPredictions
     ? "Everyone's picks are visible on the leaderboard."
     : 'Picks are hidden — only points are shown.';
+}
+
+// ---------- Deadline countdown ----------
+// 1hr grace past the 23:00 BST transfer deadline on 1 Sep 2026.
+const PREDICTION_DEADLINE = new Date("2026-09-02T00:00:00+01:00");
+let deadlineLockAttempted = false; // avoid hammering the DB with repeat writes from one tab
+
+function countdownParts(){
+  const diff = PREDICTION_DEADLINE.getTime() - Date.now();
+  if(diff <= 0) return null;
+  const s = Math.floor(diff / 1000);
+  return {
+    days: Math.floor(s / 86400),
+    hours: Math.floor((s % 86400) / 3600),
+    minutes: Math.floor((s % 3600) / 60),
+    seconds: s % 60
+  };
+}
+
+function pad2(n){ return String(n).padStart(2, '0'); }
+
+async function tickCountdown(){
+  const el = document.getElementById('deadlineTiles');
+  if(!el) return;
+  const p = countdownParts();
+  if(p){
+    el.innerHTML = [[p.days,'d'],[p.hours,'h'],[p.minutes,'m'],[p.seconds,'s']]
+      .map(([v,u])=>`<div class="tile"><span class="num">${pad2(v)}</span><span class="unit">${u}</span></div>`).join('');
+    return;
+  }
+  el.innerHTML = '<div class="tile"><span class="num">Closed</span></div>';
+  if(deadlineLockAttempted || !backendConfigured) return;
+  deadlineLockAttempted = true;
+  try{
+    await loadPoolSettings(); // get the freshest state before deciding to write
+    if(!poolSettings.deadlineAutoLockApplied){
+      const ok = await savePoolSettings({ locked: true, deadlineAutoLockApplied: true });
+      if(ok){
+        applyLockUI();
+        updatePoolControlsUI();
+      }
+    }
+  }catch(err){
+    console.error('Could not apply deadline auto-lock', err);
+    deadlineLockAttempted = false; // allow a retry on a later tick
+  }
 }
 
 // ---------- Save / Load prediction ----------
@@ -1670,6 +1772,8 @@ initForm();
 renderAvatarPicker();
 loadPlayerSuggestions();
 loadPoolSettings().then(applyLockUI);
+tickCountdown();
+setInterval(tickCountdown, 1000);
 </script>
 </body>
 </html>

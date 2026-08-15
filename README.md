@@ -116,6 +116,15 @@ both take effect immediately for everyone (no separate save step):
   anymore (the predict tab shows a banner and the Save button is disabled). Click
   **Unlock Predictions** to reopen editing. Use this once your deadline (e.g. the
   transfer window closing) has passed.
+
+  This also happens automatically: the predict tab shows a live countdown to a
+  deadline hardcoded in `index.html` (`PREDICTION_DEADLINE`, currently 1hr after
+  the 2026/27 transfer window closes). The moment it hits zero, the site locks
+  itself for everyone — no manual click needed. After that automatic lock fires
+  once, the toggle above goes back to behaving normally, so you can still
+  manually unlock afterward (e.g. to grant a grace period) without the
+  countdown re-locking it out from under you. To change the deadline, edit the
+  `PREDICTION_DEADLINE` line in `index.html`.
 - **Reveal Everyone's Picks** — once clicked, expanding any row on the leaderboard
   shows what that person actually picked in each category, not just the points
   they scored. Click **Hide Everyone's Picks** to go back to points-only.
