@@ -27,17 +27,20 @@ create policy "Public read actual_results" on actual_results
   for select using (true);
 
 -- Anyone can save/update a prediction (each player only ever touches the row
--- for their own name — the client keys writes by name). Same open-write model
--- as the "Update Results" tab, which is gated only by the client-side
--- passcode in index.html. Good enough for a friends & family pool; anyone
--- who can read the site's source could bypass the passcode and write
--- directly to actual_results, so don't rely on this for anything sensitive.
+-- for their own name — the client keys writes by name). This table is meant
+-- to be publicly writable — it's how players self-service their own picks
+-- without a login system — so it stays open even after the admin passcode
+-- hardening further down this file.
 create policy "Public write predictions" on predictions
   for insert with check (true);
 
 create policy "Public update predictions" on predictions
   for update using (true) with check (true);
 
+-- These two policies are intentionally removed later in this file (see the
+-- "Admin passcode hardening" block at the bottom) once you've deployed the
+-- admin-write Edge Function. Kept here so the table still works immediately
+-- after this first run, before you've set that up.
 create policy "Public write actual_results" on actual_results
   for insert with check (true);
 
@@ -82,8 +85,7 @@ create policy "Public read live_stats" on live_stats
 
 -- Single row holding pool-wide admin controls: whether predictions are
 -- locked from further editing, and whether everyone's individual picks are
--- revealed on the leaderboard (not just their points). Same open-write
--- model as actual_results — gated only by the client-side admin passcode.
+-- revealed on the leaderboard (not just their points).
 create table if not exists pool_settings (
   id text primary key,
   data jsonb not null,
@@ -95,8 +97,35 @@ alter table pool_settings enable row level security;
 create policy "Public read pool_settings" on pool_settings
   for select using (true);
 
+-- These two policies are intentionally removed later in this file (see the
+-- "Admin passcode hardening" block at the bottom) once you've deployed the
+-- admin-write and auto-lock Edge Functions. Kept here so the table still
+-- works immediately after this first run, before you've set that up.
 create policy "Public write pool_settings" on pool_settings
   for insert with check (true);
 
 create policy "Public update pool_settings" on pool_settings
   for update using (true) with check (true);
+
+-- ============================================================
+-- Admin passcode hardening (run this LAST, only after you've deployed
+-- both Edge Functions in supabase/functions/ and set the ADMIN_PASSCODE
+-- secret — see README.md, "Moving admin writes behind a passcode-checked
+-- server function"). Until you run this block, the admin passcode is
+-- still only checked client-side, same as before; running it is what
+-- actually closes that gap.
+--
+-- This removes the open public-write policies on actual_results and
+-- pool_settings, so from this point on only the service_role key (used
+-- inside the admin-write and auto-lock Edge Functions, never exposed to
+-- the browser) can write to them. Nothing here touches the predictions
+-- table — it stays fully open for insert/update, exactly as before, so
+-- every player's existing saved picks and PINs, and everyone's ability
+-- to keep saving their own picks, are completely unaffected.
+-- ============================================================
+
+drop policy if exists "Public write actual_results" on actual_results;
+drop policy if exists "Public update actual_results" on actual_results;
+
+drop policy if exists "Public write pool_settings" on pool_settings;
+drop policy if exists "Public update pool_settings" on pool_settings;

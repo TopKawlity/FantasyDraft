@@ -120,18 +120,24 @@ both take effect immediately for everyone (no separate save step):
   This also happens automatically: the predict tab shows a live countdown to a
   deadline hardcoded in `index.html` (`PREDICTION_DEADLINE`, currently 1hr after
   the 2026/27 transfer window closes). The moment it hits zero, the site locks
-  itself for everyone — no manual click needed. After that automatic lock fires
-  once, the toggle above goes back to behaving normally, so you can still
-  manually unlock afterward (e.g. to grant a grace period) without the
-  countdown re-locking it out from under you. To change the deadline, edit the
-  `PREDICTION_DEADLINE` line in `index.html`.
+  itself for everyone — no manual click needed, via the passcode-free
+  `auto-lock` Edge Function, which re-checks the deadline itself server-side.
+  After that automatic lock fires once, the toggle above goes back to behaving
+  normally, so you can still manually unlock afterward (e.g. to grant a grace
+  period) without the countdown re-locking it out from under you. To change
+  the deadline, edit the `PREDICTION_DEADLINE` line in **both** `index.html`
+  (the countdown display) and `supabase/functions/auto-lock/index.ts` (the
+  server-side check) — then redeploy that function.
 - **Reveal Everyone's Picks** — once clicked, expanding any row on the leaderboard
   shows what that person actually picked in each category, not just the points
   they scored. Click **Hide Everyone's Picks** to go back to points-only.
 
-Like the passcode gate, these are convenience controls, not hard security — anyone
-with the site's `anon` key could still write to the site's data directly. Fine for
-a friends & family pool; don't rely on it for anything that needs real enforcement.
+Once you've completed the Edge Function setup above, both of these toggles —
+along with saving actual results and resetting PINs — are enforced
+server-side: only someone who knows the admin passcode can trigger them,
+regardless of what's visible in the page source. The one thing that's
+still openly writable by design is the `predictions` table itself, since
+players need to be able to save their own picks without a login system.
 
 ## PIN-protected editing
 
@@ -151,18 +157,57 @@ Note the PIN is stored in plain text inside each prediction's data (same public
 among friends, not someone deliberately reading the table via the `anon` key.
 Same trust model as the rest of the admin controls.
 
-## Changing the admin passcode
+## Admin passcode & server-side write protection
 
-The "Update Results" tab is gated by a passcode set in `index.html`:
+The "Update Results" tab is gated by a passcode, but unlike a plain client-side
+check, it's now verified **server-side** by a Supabase Edge Function
+(`supabase/functions/admin-write`) — the passcode never appears anywhere in
+`index.html`'s source, and every admin write (saving actual results, the lock/
+reveal toggles, resetting a player's PIN) is routed through that function
+instead of writing to the database directly with the public `anon` key. A
+second, passcode-free function (`supabase/functions/auto-lock`) handles the
+countdown's automatic lock at the deadline — it re-checks the deadline itself
+on the server, so it can't be tricked into locking early or twice.
 
-```js
-const ADMIN_PASS = "boot2627";
-```
+Regular player predictions are untouched by any of this: the `predictions`
+table stays fully open so everyone can keep saving and loading their own picks
+exactly as before, with no deploy step required for that to keep working.
 
-Change it to whatever you like before publishing. Note this is a client-side-only
-gate (same as the original artifact version) — it stops casual editing but isn't a
-real security boundary, since anyone can read the page source. Don't put anything
-sensitive behind it.
+### One-time setup: deploy the Edge Functions
+
+1. In the Supabase dashboard, go to **Edge Functions** → **Deploy a new
+   function**, name it `admin-write`, and paste in the contents of
+   [`supabase/functions/admin-write/index.ts`](./supabase/functions/admin-write/index.ts).
+   Deploy it.
+2. Repeat for `auto-lock`, using
+   [`supabase/functions/auto-lock/index.ts`](./supabase/functions/auto-lock/index.ts).
+3. Go to **Edge Functions → Manage secrets** (or **Project Settings → Edge
+   Functions**) and add a secret:
+
+   | Secret name | Value |
+   |---|---|
+   | `ADMIN_PASSCODE` | your chosen passcode, e.g. `boot2627` |
+
+   This is now the *only* place the passcode is set — there's nothing to
+   change in `index.html` anymore. To change the passcode later, just update
+   this secret.
+4. In the Supabase dashboard, open **SQL Editor → New query**, paste in the
+   **"Admin passcode hardening"** block at the bottom of
+   [`supabase-setup.sql`](./supabase-setup.sql), and run it. This removes the
+   old open public-write policies on `actual_results` and `pool_settings`, so
+   from then on only the Edge Functions (using the `service_role` key, which
+   Supabase injects automatically — you don't set it yourself) can write to
+   them.
+
+Do steps 1–3 before step 4 — that way admin writes work the whole time and
+there's no window where the "Update Results" tab is broken. If you happen to
+run step 4 first, admin writes will just fail with an error until you finish
+1–3; nothing is lost, and player predictions keep working the entire time
+regardless of the order.
+
+No existing data is touched by any of this — it only changes who's allowed to
+write to two tables going forward. Every player's saved predictions and PINs
+are unaffected.
 
 ## How data is stored
 
@@ -172,7 +217,10 @@ sensitive behind it.
   `actual_results` table.
 - Both tables are readable by anyone with the site's `anon` key (which is public by
   design — it's embedded in the page source), so the leaderboard works for everyone
-  without a login system.
+  without a login system. `predictions` is also writable by anyone with the `anon`
+  key (players self-service their own picks that way); `actual_results` is
+  writable only through the passcode-checked `admin-write` Edge Function once
+  you've completed the setup above.
 
 ## Local development
 

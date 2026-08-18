@@ -560,6 +560,24 @@
   .admin-gate{max-width:340px;margin:20px auto;text-align:center;}
   .helper{font-size:12px;color:var(--ink-soft);margin-top:-8px;margin-bottom:16px;}
 
+  .input-with-toggle{position:relative;margin-bottom:14px;}
+  .input-with-toggle input{margin-bottom:0;padding-right:66px;}
+  .input-toggle-btn{
+    position:absolute;right:6px;top:6px;bottom:6px;
+    padding:0 10px;
+    border:2px solid var(--paper-line);
+    border-radius:3px;
+    background:var(--white);
+    color:var(--ink);
+    font-family:'Oswald',sans-serif;
+    font-weight:600;
+    font-size:11px;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+    cursor:pointer;
+  }
+  .input-toggle-btn:hover{background:var(--gold);color:var(--white);border-color:var(--gold);}
+
   .footer-note{
     text-align:center;
     font-size:12px;
@@ -740,7 +758,10 @@
   <div class="panel" id="panel-admin">
     <div class="admin-gate" id="adminGate">
       <p class="chit-desc">Enter the pool passcode to update real-world results.</p>
-      <input type="text" id="adminPass" placeholder="Passcode">
+      <div class="input-with-toggle">
+        <input type="password" id="adminPass" placeholder="Passcode" autocomplete="off">
+        <button class="input-toggle-btn" id="adminPassToggle" type="button" aria-label="Show passcode">Show</button>
+      </div>
       <button class="btn" id="adminUnlockBtn" type="button">Unlock</button>
       <p class="helper" id="adminError" style="display:none;color:var(--claret);">Wrong passcode.</p>
     </div>
@@ -997,7 +1018,14 @@ const TEAMS = [
 const PROMOTED_TEAMS = ["Coventry City", "Hull City", "Ipswich Town"];
 
 const ACTUAL_ROW_ID = "actual";
-const ADMIN_PASS = "boot2627"; // change this in the code if you want a different passcode
+// The admin passcode itself now lives only in the ADMIN_PASSCODE secret on the
+// Supabase Edge Function (supabase/functions/admin-write) — it's checked
+// server-side, so it no longer appears anywhere in this page's source. All
+// admin writes (results, pool controls, PIN resets) route through that
+// function. See README.md for deployment steps.
+const ADMIN_FUNCTION = 'admin-write';
+const AUTO_LOCK_FUNCTION = 'auto-lock';
+let adminPasscode = null; // held in memory only after a successful unlock, for this tab's admin actions
 
 const SCORES = { exactTable:10, partialTable:4, award:20, teamRecord:15 };
 
@@ -1263,6 +1291,19 @@ function requireBackend(statusElId){
   return true;
 }
 
+// Calls the admin-write Supabase Edge Function, which checks the passcode
+// server-side (via the ADMIN_PASSCODE secret) before performing any write —
+// the passcode is never compared client-side. Throws on any failure so
+// callers can just try/catch.
+async function callAdminFunction(action, payload){
+  const { data, error } = await db.functions.invoke(ADMIN_FUNCTION, {
+    body: Object.assign({ passcode: adminPasscode, action }, payload || {})
+  });
+  if(error) throw new Error(error.message || 'Request failed — try again.');
+  if(!data || data.ok !== true) throw new Error((data && data.error) || 'Request failed — try again.');
+  return data;
+}
+
 // ---------- Backend access (Supabase) ----------
 async function savePrediction(name, data){
   const id = name.toLowerCase();
@@ -1292,10 +1333,8 @@ async function loadActual(){
 }
 
 async function saveActual(data){
-  const { error } = await db.from('actual_results').upsert({
-    id: ACTUAL_ROW_ID, data, updated_at: new Date().toISOString()
-  });
-  return !error;
+  await callAdminFunction('save_actual_results', { data });
+  return true;
 }
 
 // ---------- Pool controls (lock predictions / reveal picks) ----------
@@ -1316,12 +1355,9 @@ async function loadPoolSettings(){
 }
 
 async function savePoolSettings(changes){
-  const merged = Object.assign({}, poolSettings, changes);
-  const { error } = await db.from('pool_settings').upsert({
-    id: POOL_SETTINGS_ROW_ID, data: merged, updated_at: new Date().toISOString()
-  });
-  if(!error){ poolSettings = merged; }
-  return !error;
+  const result = await callAdminFunction('set_pool_settings', { changes });
+  if(result.settings){ poolSettings = result.settings; }
+  return true;
 }
 
 function applyLockUI(){
@@ -1372,13 +1408,15 @@ async function tickCountdown(){
   if(deadlineLockAttempted || !backendConfigured) return;
   deadlineLockAttempted = true;
   try{
-    await loadPoolSettings(); // get the freshest state before deciding to write
-    if(!poolSettings.deadlineAutoLockApplied){
-      const ok = await savePoolSettings({ locked: true, deadlineAutoLockApplied: true });
-      if(ok){
-        applyLockUI();
-        updatePoolControlsUI();
-      }
+    // Public, passcode-free Edge Function: it re-checks the deadline itself
+    // server-side and only ever flips locked from false to true, once — so
+    // it's safe to call from any visitor's tab with no admin gate.
+    const { data, error } = await db.functions.invoke(AUTO_LOCK_FUNCTION, { body: {} });
+    if(error) throw error;
+    if(data && data.locked){
+      await loadPoolSettings();
+      applyLockUI();
+      updatePoolControlsUI();
     }
   }catch(err){
     console.error('Could not apply deadline auto-lock', err);
@@ -1449,22 +1487,43 @@ document.getElementById('loadMineBtn').addEventListener('click', async ()=>{
 });
 
 // ---------- Admin ----------
+document.getElementById('adminPassToggle').addEventListener('click', ()=>{
+  const input = document.getElementById('adminPass');
+  const btn = document.getElementById('adminPassToggle');
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.textContent = show ? 'Hide' : 'Show';
+  btn.setAttribute('aria-label', show ? 'Hide passcode' : 'Show passcode');
+});
+
 document.getElementById('adminUnlockBtn').addEventListener('click', async ()=>{
   const val = document.getElementById('adminPass').value;
-  if(val === ADMIN_PASS){
+  const errEl = document.getElementById('adminError');
+  errEl.style.display = 'none';
+  if(!backendConfigured){
+    errEl.textContent = 'Backend not configured yet — see the banner at the top of the page.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const btn = document.getElementById('adminUnlockBtn');
+  btn.disabled = true;
+  adminPasscode = val;
+  try{
+    await callAdminFunction('verify');
     document.getElementById('adminGate').style.display = 'none';
     document.getElementById('adminForm').style.display = 'block';
-    if(backendConfigured){
-      try{
-        const data = await loadActual();
-        if(data){ fillActualForm(data); }
-      }catch(err){ /* no actual results saved yet, fine */ }
-      await loadPoolSettings();
-      updatePoolControlsUI();
-    }
-  } else {
-    document.getElementById('adminError').style.display = 'block';
+    try{
+      const data = await loadActual();
+      if(data){ fillActualForm(data); }
+    }catch(err){ /* no actual results saved yet, fine */ }
+    await loadPoolSettings();
+    updatePoolControlsUI();
+  }catch(err){
+    adminPasscode = null;
+    errEl.textContent = err.message || 'Wrong passcode.';
+    errEl.style.display = 'block';
   }
+  btn.disabled = false;
 });
 
 document.getElementById('lockToggleBtn').addEventListener('click', async ()=>{
@@ -1482,7 +1541,7 @@ document.getElementById('lockToggleBtn').addEventListener('click', async ()=>{
     }
   }catch(err){
     console.error(err);
-    showStatus('adminStatus','Could not update — try again.', true);
+    showStatus('adminStatus', err.message || 'Could not update — try again.', true);
   }
   btn.disabled = false;
 });
@@ -1501,7 +1560,7 @@ document.getElementById('revealToggleBtn').addEventListener('click', async ()=>{
     }
   }catch(err){
     console.error(err);
-    showStatus('adminStatus','Could not update — try again.', true);
+    showStatus('adminStatus', err.message || 'Could not update — try again.', true);
   }
   btn.disabled = false;
 });
@@ -1515,24 +1574,13 @@ document.getElementById('resetPinBtn').addEventListener('click', async ()=>{
   const btn = document.getElementById('resetPinBtn');
   btn.disabled = true;
   try{
-    const existing = await loadPrediction(name);
-    if(!existing){
-      showStatus('resetPinStatus', `No saved picks found for "${name}".`, true);
-      btn.disabled = false;
-      return;
-    }
-    const updated = Object.assign({}, existing, { pin });
-    const ok = await savePrediction(existing.name || name, updated);
-    if(ok){
-      showStatus('resetPinStatus', `PIN reset for ${existing.name || name}. New PIN: ${pin}`, false);
-      document.getElementById('resetPinName').value = '';
-      document.getElementById('resetPinValue').value = '';
-    } else {
-      showStatus('resetPinStatus','Something went wrong — try again.', true);
-    }
+    const result = await callAdminFunction('reset_pin', { name, pin });
+    showStatus('resetPinStatus', `PIN reset for ${result.name || name}. New PIN: ${pin}`, false);
+    document.getElementById('resetPinName').value = '';
+    document.getElementById('resetPinValue').value = '';
   }catch(err){
     console.error(err);
-    showStatus('resetPinStatus','Could not reset PIN right now — try again.', true);
+    showStatus('resetPinStatus', err.message || 'Could not reset PIN right now — try again.', true);
   }
   btn.disabled = false;
 });
@@ -1581,7 +1629,7 @@ document.getElementById('saveActualBtn').addEventListener('click', async ()=>{
     }
   }catch(err){
     console.error(err);
-    showStatus('adminStatus','Could not save right now — try again.', true);
+    showStatus('adminStatus', err.message || 'Could not save right now — try again.', true);
   }
   btn.disabled = false;
 });
