@@ -990,13 +990,17 @@
 <script>
 /* ============================================================
    BACKEND CONFIG — fill these in with your own Supabase project
-   details (Project Settings → API in the Supabase dashboard).
-   The anon/public key is safe to expose in client-side code; it
-   only grants what your Row Level Security policies allow (see
-   supabase-setup.sql).
+   details (Project Settings → API Keys in the Supabase dashboard).
+   The publishable/anon key is safe to expose in client-side code;
+   it only grants what your Row Level Security policies allow (see
+   supabase-setup.sql). Use the "publishable" key (starts with
+   sb_publishable_) if your project shows one — it's the modern
+   replacement for the legacy anon JWT key and is required by Edge
+   Functions on newer projects; the legacy anon key still works for
+   plain database calls but can be rejected by Edge Functions.
    ============================================================ */
 const SUPABASE_URL = "https://xoavcxaxhcbwznxagtnb.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhvYXZjeGF4aGNid3pueGFndG5iIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODY2NDkzNjQsImV4cCI6MjEwMjIyNTM2NH0.lL4dlKKtoz4QxCkfELm0QdKA_6E-vrMlFmjeKpwyYAg";
+const SUPABASE_ANON_KEY = "sb_publishable_rh4NIum9__gpvuX0lu1zcQ_PbgV5GLz";
 
 const backendConfigured = !SUPABASE_URL.startsWith("YOUR_") && !SUPABASE_ANON_KEY.startsWith("YOUR_");
 const db = backendConfigured ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;

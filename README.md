@@ -21,9 +21,18 @@ which only works inside Claude.ai artifacts).
 
 ### 3. Get your API credentials
 
-1. In the Supabase dashboard, go to **Project Settings → API**.
-2. Copy the **Project URL** and the **`anon` `public`** key (not the `service_role`
-   key — that one must never be exposed in client-side code).
+1. In the Supabase dashboard, go to **Project Settings → API Keys** (older dashboards:
+   **Project Settings → API**).
+2. Copy the **Project URL** and your public client key — on newer projects this is
+   the **`publishable`** key (starts with `sb_publishable_`); on older projects it's
+   the **`anon` `public`** key. Either is safe to expose in client-side code. Never
+   use the **`secret`**/**`service_role`** key here — that one must never appear in
+   client-side code.
+   - If your project shows a `publishable` key, use that one — it's required for
+     the admin Edge Functions (see "Admin passcode & server-side write protection"
+     below) to accept requests; the legacy `anon` key still works for plain
+     database reads/writes but can get rejected by Edge Functions on newer
+     projects.
 
 ### 4. Configure the site
 
