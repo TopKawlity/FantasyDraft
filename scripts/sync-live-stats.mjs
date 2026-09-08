@@ -74,21 +74,20 @@ async function fetchStandings() {
   const table = total ? total.table : [];
 
   const unmatched = new Set();
+  // Use the table's own array order, not the API's `position` field: when
+  // teams are tied on points, football-data.org gives them the same
+  // position number and skips the next one (e.g. two teams at 17, nothing
+  // at 18) — filtering by that number can silently drop tied teams near
+  // the edges of top6/bottom3. The array itself is always already in the
+  // correct rank order regardless of what number `position` reports.
   const rows = table.map((row) => {
     const matched = matchTeamName(row.team.name, row.team.shortName, row.team.tla);
     if (!matched) unmatched.add(row.team.name);
-    return { position: row.position, team: matched, goalsFor: row.goalsFor };
+    return { team: matched, goalsFor: row.goalsFor };
   });
 
-  const top6 = rows
-    .filter((r) => r.position <= 6)
-    .sort((a, b) => a.position - b.position)
-    .map((r) => r.team);
-
-  const bottom3 = rows
-    .filter((r) => r.position > table.length - 3)
-    .sort((a, b) => a.position - b.position)
-    .map((r) => r.team);
+  const top6 = rows.slice(0, 6).map((r) => r.team);
+  const bottom3 = rows.slice(-3).map((r) => r.team);
 
   const bestAttack = rows.reduce(
     (best, r) => (r.goalsFor != null && (!best || r.goalsFor > best.goalsFor) ? r : best),
