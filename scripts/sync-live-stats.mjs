@@ -106,10 +106,13 @@ async function fetchScorers() {
   const data = await footballDataFetch(`/competitions/${PL_COMPETITION_CODE}/scorers?limit=25`);
   const scorers = data.scorers || [];
 
-  const goldenBoot = scorers.reduce(
-    (best, s) => (s.goals != null && (!best || s.goals > best.goals) ? s : best),
-    null
-  );
+  const goldenBoot = scorers.reduce((best, s) => {
+    if (s.goals == null) return best;
+    if (!best) return s;
+    if (s.goals > best.goals) return s;
+    if (s.goals === best.goals && (s.assists || 0) > (best.assists || 0)) return s;
+    return best;
+  }, null);
   const topAssist = scorers.reduce(
     (best, s) => (s.assists != null && (!best || s.assists > best.assists) ? s : best),
     null
